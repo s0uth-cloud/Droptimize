@@ -1,7 +1,7 @@
 import { TextField, Button, Checkbox } from '@mui/material';
 import '../styles.css';
 
-const LogInForm = () => {
+export default function LogInForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // handle login logic here
@@ -81,5 +81,3 @@ const LogInForm = () => {
     </div>
   );
 };
-
-export default LogInForm;

@@ -204,6 +204,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
+  width: 100%;
+}
+
+.landing-welcome-content {
+  width: 100%;
+  max-width: 500px;
 }
 
 .landing-hero-image {
@@ -213,14 +219,15 @@ html, body {
 }
 
 .landing-main-logo {
-  width: 600px;
+  max-width: 600px;
+  width: 100%;
   margin-bottom: 1rem;
 }
 
 .landing-title {
   font-family: 'LEMON MILK', sans-serif;
   font-weight: 700;
-  font-size: 2.5rem;
+  font-size: 2vw;
   color: #00b2e1;
 }
 
@@ -229,6 +236,7 @@ html, body {
   font-weight: 400;
   color: #000000;
   margin: 1rem 0;
+  font-size: 1rem
 }
 
 .landing-cta-button {
@@ -242,10 +250,10 @@ html, body {
   font-weight: 700;
   font-size: large;
   align-content: center;
-}
-
-.landing-cta-button:hover {
-  background-image: linear-gradient(#00b2e1, #00b2e1);
+  transition: background-image 0.3s ease;
+  &:hover {
+    background-image: linear-gradient(#00b2e1, #00b2e1);
+  }
 }
 
 /* Features section styles for the landing page */
@@ -257,6 +265,44 @@ html, body {
   padding: 2rem;
   background-image: linear-gradient(#00b2e1, #0064b5);
   color: #ffffff;
+}
+
+.landing-section-title {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.landing-feature-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px;
+  width: 300px;
+  height: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  &:hover {
+    transform: translateY(-5px);
+  }
+}
+
+.feature-card img {
+  width: 200px;
+  margin-bottom: 1rem;
 }
 
 /* About section styles for the landing page */

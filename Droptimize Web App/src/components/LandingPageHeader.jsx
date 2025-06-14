@@ -1,4 +1,4 @@
-const LandingPageHeader = () => {
+export default function LandingPageHeader() {
   return (
     <header className="landing-header">
       <a href="/">
@@ -19,5 +19,3 @@ const LandingPageHeader = () => {
     </header>
   );
 };
-
-export default LandingPageHeader;

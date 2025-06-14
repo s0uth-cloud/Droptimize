@@ -1,7 +1,7 @@
 import { TextField, Button } from '@mui/material';
 import '../styles.css';
 
-const RegistrationForm = () => {
+export default function RegistrationForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     // handle sign-up logic here
@@ -88,5 +88,3 @@ const RegistrationForm = () => {
     </div>
   );
 };
-
-export default RegistrationForm;

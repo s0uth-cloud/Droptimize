@@ -1,7 +1,8 @@
 import LandingPageHeader from "../components/LandingPageHeader.jsx";
 import Footer from "../components/Footer.jsx";
+import FeatureCard from "../components/FeatureCard.jsx";
 
-const LandingPage = () => {
+export default function LandingPage() {
   return (
     <div className="landing-page">
       <LandingPageHeader />
@@ -24,18 +25,43 @@ const LandingPage = () => {
         <section className="landing-features" id="features">
           <h2 className="landing-section-title">Features</h2>
           <div className="landing-feature-list">
-            <div className="landing-feature-item">
-              <h3>Product Research</h3>
-              <p>Find winning products with our advanced research tools.</p>
+            <FeatureCard className="landing-feature-card"
+              title="For Admins"
+              description="Manage your dropshipping business with ease."
+              icon="/admin-icon.png"
+            />
+
+            <div className="admin-features">
+              <FeatureCard className="landing-feature-card"
+                title="Driver Management"
+                description="Efficiently manage your drivers and their routes."
+                icon="/driver-icon.png"
+              />
+
+              <FeatureCard className="landing-feature-card"
+                title="Workload Estimation"
+                description="Estimate the workload for upcoming deliveries."
+                icon="/workload-estimation-icon.png"
+              />
+
+              <FeatureCard className="landing-feature-card"
+                title="Courier Location Tracking"
+                description="Gain insights into your couriers' locations and optimize delivery routes."
+                icon="/courier-location-tracking-icon.png"
+              />
+
+              <FeatureCard className="landing-feature-card"
+                title="Overspeeding Logging"
+                description="Monitor your business performance with detailed analytics."
+                icon="/analytics-icon.png"
+              />
             </div>
-            <div className="landing-feature-item">
-              <h3>Market Analysis</h3>
-              <p>Analyze market trends to stay ahead of the competition.</p>
-            </div>
-            <div className="landing-feature-item">
-              <h3>Performance Tracking</h3>
-              <p>Track your store's performance with detailed analytics.</p>
-            </div>
+
+            <FeatureCard className="landing-feature-card"
+              title="For Couriers"
+              description="Track your couriers' locations in real-time."
+              icon="/courier-icon.png"
+            />
           </div>
         </section>
 
@@ -58,5 +84,3 @@ const LandingPage = () => {
     </div>
   );
 };
-
-export default LandingPage;
