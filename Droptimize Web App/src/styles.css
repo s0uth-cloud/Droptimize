@@ -2,30 +2,23 @@
   font-family: 'LEMON MILK';
   font-style: normal;
   font-weight: 400;
-  src:  url('../assets/fonts/LEMONMILK-Regular.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-Bold.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-Light.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-Medium.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-LightItalic.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-RegularItalic.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-BoldItalic.otf') format('opentype'),
-        url('../assets/fonts/LEMONMILK-MediumItalic.otf') format('opentype');
+  src:  url('/fonts/LEMONMILK/LEMONMILK-Bold.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-MediumItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-BoldItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-LightItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Medium.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Regular.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Light.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-RegularItalic.woff2') format('woff2');
+  font-display: swap;
 }
 
 @font-face {
-  font-family: 'Lexend';
-  font-style: normal;
-  font-weight: 400;
-  src:  url('../assets/fonts/Lexend-Black.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-Bold.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-ExtraBold.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-ExtraLight.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-Light.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-Medium.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-Regular.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-SemiBold.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-Thin.ttf') format('truetype'),
-        url('../assets/fonts/Lexend-VariableFont_wght.ttf') format('truetype');
+    font-family: 'Lexend';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/fonts/Lexend/Lexend-Regular.woff2') format('woff2');
+    font-display: swap;
 }
 
 html, body {
@@ -83,6 +76,10 @@ html, body {
   font-weight: 600;
 }
 
+.error-message {
+  color: red;
+  margin-bottom: 10px;
+}
 
 /* This part styles the login page for the Droptimize web application */
 
@@ -135,12 +132,26 @@ html, body {
 /* The landing page includes a header, main content area, and footer */
 
 .landing-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
   background-color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: top 0.3s ease;
+}
+
+.landing-header.hide {
+  top: -100px;
+}
+
+.landing-header.show {
+  top: 0;
 }
 
 .landing-logo {
@@ -157,8 +168,7 @@ html, body {
 }
 
 .landing-nav-link {
-  font-family: 'Lexend', sans-serif;
-  font-weight: 600;
+  font: 600 clamp(0.75rem, 1vw, 1.5rem) 'Lexend', sans-serif;
   color: #00b2e1;
   text-decoration: none;
   padding: 0.5rem 1rem;
@@ -173,12 +183,11 @@ html, body {
 
 .landing-auth-buttons {
   display: flex;
-  gap: 1rem;
+  gap: clamp(0.5rem, 1vw, 1rem);
 }
 
 .landing-login-button, .landing-signup-button {
-  font-family: 'Lexend', sans-serif;
-  font-weight: 600;
+  font: 600 clamp(0.75rem, 1vw, 1.5rem) 'Lexend', sans-serif;
   color: #ffffff;
   text-decoration: none;
   background-color: #00b2e1;
@@ -191,12 +200,13 @@ html, body {
   background-color: #0064b5;
 }
 
-/* Main content styles for the landing page */
+/* Welcome content styles for the landing page */
 
 .landing-main {
   display: flex;
   text-align: center;
   flex-direction: column;
+  padding-top: 100px;
 }
 
 .landing-welcome {
@@ -225,18 +235,14 @@ html, body {
 }
 
 .landing-title {
-  font-family: 'LEMON MILK', sans-serif;
-  font-weight: 700;
-  font-size: 2vw;
+  font: 700 clamp(1.75rem, 2vw, 2.5rem) 'LEMON MILK', sans-serif;
   color: #00b2e1;
 }
 
 .landing-description {
-  font-family: 'Lexend', sans-serif;
-  font-weight: 400;
+  font: 400 clamp(1rem, 1vw, 1.25rem) 'Lexend', sans-serif;
   color: #000000;
   margin: 1rem 0;
-  font-size: 1rem
 }
 
 .landing-cta-button {
@@ -303,6 +309,39 @@ html, body {
 .feature-card img {
   width: 200px;
   margin-bottom: 1rem;
+}
+
+.landing-admin-features, .landing-courier-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  max-width: 996px
+}
+
+.back-button-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.back-button {
+  height: 50px;
+  margin-top: 1rem;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  color: #ffffff;
+  background-color: transparent;
+  font: 700 1rem 'Lexend', sans-serif;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.back-button:hover {
+  background-color: #ffffff;
+  color: #00b2e1;
 }
 
 /* About section styles for the landing page */

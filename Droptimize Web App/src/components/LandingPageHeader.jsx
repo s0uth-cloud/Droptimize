@@ -1,6 +1,44 @@
+import { useState, useEffect, useRef  } from "react";
+
 export default function LandingPageHeader() {
+  /* Header scroll behavior */
+  const [visible, setVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const scrollTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY) {
+        setVisible(false);
+      } else {
+        setVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+
+      // Reset timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(() => {
+        setVisible(true);
+      }, 150);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [lastScrollY]);
+
   return (
-    <header className="landing-header">
+    <header className={`landing-header ${visible ? "show" : "hide"}`}>
       <a href="/">
         <img src="/logo.svg" alt="Droptimize Logo" className="landing-logo" />
       </a>
