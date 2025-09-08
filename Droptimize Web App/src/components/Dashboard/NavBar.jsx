@@ -13,6 +13,7 @@ export default function NavBar() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Fetch branch data on component mount
   useEffect(() => {
     const fetchBranch = async () => {
       if (!user?.uid) {
