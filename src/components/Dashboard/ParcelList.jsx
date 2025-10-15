@@ -45,7 +45,13 @@ export default function ParcelList({ parcels = [], loading = false }) {
     return (
       <Grid container spacing={2}>
         {[1, 2, 3].map((item) => (
-          <Grid item xs={12} sm={6} md={4} key={item}>
+          <Grid
+            key={item}
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}>
             <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
           </Grid>
         ))}
@@ -80,7 +86,13 @@ export default function ParcelList({ parcels = [], loading = false }) {
           const color = statusColors[statusKey] || "#c4cad0";
 
           return (
-            <Grid item xs={12} sm={6} md={4} key={parcel.id || index}>
+            <Grid
+              key={parcel.id || index}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4
+              }}>
               <Card
                 sx={{
                   borderRadius: 3,
@@ -137,7 +149,6 @@ export default function ParcelList({ parcels = [], loading = false }) {
           );
         })}
       </Grid>
-
       <ParcelDetailsModal
         open={Boolean(selectedParcel)}
         onClose={handleClose}

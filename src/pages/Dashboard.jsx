@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Grid,
-  Typography,
-  CircularProgress,
-  Box,
-  Divider,
-} from "@mui/material";
+import { Typography, CircularProgress, Box, Divider } from "@mui/material";
 import ParcelStatusCard from "../components/Dashboard/ParcelStatusCard.jsx";
 import DriverStatusCard from "../components/Dashboard/DriverStatusCard.jsx";
 import DeliveryVolumeChart from "../components/Dashboard/DeliveryVolumeChart.jsx";
@@ -121,66 +115,70 @@ export default function Dashboard() {
           <CircularProgress color="primary" />
         </Box>
       ) : (
-        <Grid
-          container
-          spacing={3}
+        <Box
           sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
             width: "100%",
-            margin: 0,
-            alignItems: "stretch",
           }}
         >
-          {/* Row 1: Status Cards */}
-          <Grid item xs={12} md={6} lg={3}>
-            <ParcelStatusCard
-              delivered={parcelData.delivered}
-              outForDelivery={parcelData.outForDelivery}
-              failedOrReturned={parcelData.failedOrReturned}
-              pending={parcelData.pending}
-            />
-          </Grid>
-          <Grid item xs={12} md={6} lg={3}>
-            <DriverStatusCard
-              available={driverData.available}
-              onTrip={driverData.onTrip}
-              offline={driverData.offline}
-            />
-          </Grid>
+          {/* Status Cards */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 3,
+            }}
+          >
+            <Box sx={{ flex: "1 1 250px", minWidth: 250 }}>
+              <ParcelStatusCard
+                delivered={parcelData.delivered}
+                outForDelivery={parcelData.outForDelivery}
+                failedOrReturned={parcelData.failedOrReturned}
+                pending={parcelData.pending}
+              />
+            </Box>
 
-          {/* Spacer */}
-          <Grid item xs={12}>
-            <Divider sx={{ borderColor: "#c4cad0", my: 1 }} />
-          </Grid>
+            <Box sx={{ flex: "1 1 250px", minWidth: 250 }}>
+              <DriverStatusCard
+                available={driverData.available}
+                onTrip={driverData.onTrip}
+                offline={driverData.offline}
+              />
+            </Box>
 
-          {/* Row 2: Charts */}
-          <Grid item xs={12} lg={6} sx={{ display: "flex" }}>
-            <Box sx={{ width: "100%", height: "100%" }}>
+            <Box sx={{ flex: "1 1 250px", minWidth: 250 }}>
+              <RecentIncidentCard incidents={incidents} />
+            </Box>
+          </Box>
+
+          <Divider sx={{ borderColor: "#c4cad0", my: 1 }} />
+
+          {/* Charts */}
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 3,
+              width: "100%",
+            }}
+          >
+            <Box sx={{ flex: "1 1 500px", minWidth: 300, height: { xs: 300, sm: 350, md: 400 } }}>
               <DeliveryVolumeChart
                 dailyData={dailyDeliveryData}
                 weeklyData={weeklyDeliveryData}
               />
             </Box>
-          </Grid>
 
-          <Grid item xs={12} lg={6} sx={{ display: "flex" }}>
-            <Box sx={{ width: "100%", height: "100%" }}>
+            <Box sx={{ flex: "1 1 500px", minWidth: 300, height: { xs: 300, sm: 350, md: 400 } }}>
               <OverspeedingTrendChart
                 dailyData={dailySpeedData}
                 weeklyData={weeklySpeedData}
               />
             </Box>
-          </Grid>
-
-          {/* Spacer */}
-          <Grid item xs={12}>
-            <Divider sx={{ borderColor: "#c4cad0", my: 1 }} />
-          </Grid>
-
-          {/* Row 3: Recent Incidents */}
-          <Grid item xs={12}>
-            <RecentIncidentCard incidents={incidents} />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       )}
     </Box>
   );

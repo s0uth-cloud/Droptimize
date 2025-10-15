@@ -259,7 +259,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect }) {
             >
               <AccordionSummary expandIcon={<ExpandMore />} sx={{ borderRadius: 2 }}>
                 <Grid container alignItems="center" justifyContent="space-between">
-                  <Grid item sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Grid sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <Avatar src={driver.photoURL || ""} alt={driver.fullName || "Driver"} />
                     <Box>
                       <Typography variant="subtitle1" fontWeight="bold">{driver.fullName || "Unnamed Driver"}</Typography>
@@ -274,7 +274,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect }) {
                   </Grid>
 
                   {isOverspeeding && (
-                    <Grid item>
+                    <Grid>
                       <Tooltip title="Give Warning">
                         <IconButton onClick={(e) => { e.stopPropagation(); handleGiveWarning(driver); }}>
                           <GiveWarningButton />
@@ -284,10 +284,9 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect }) {
                   )}
                 </Grid>
               </AccordionSummary>
-
               <AccordionDetails>
                 <Grid container alignItems="center" justifyContent="space-between">
-                  <Grid item>
+                  <Grid>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <Typography variant="body2">Vehicle: {driver.vehicle || "N/A"}</Typography>
                       <Typography variant="body2">Plate: {driver.plateNumber || "N/A"}</Typography>
@@ -295,7 +294,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect }) {
                   </Grid>
 
                   {driver.location && (
-                    <Grid item>
+                    <Grid>
                       <Tooltip title="Focus on Map">
                         <IconButton onClick={() => handleFocusOnMap(driver)}>
                           <MyLocation />

@@ -256,17 +256,19 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
               >
                 <DeleteIcon />
               </IconButton>
-
               <Typography variant="subtitle1" fontWeight="bold" mb={2}>
                 Parcel {idx + 1}
               </Typography>
-
               {/* Recipient Info */}
               <Typography variant="subtitle2" color="text.secondary" mb={1}>
                 Recipient Information
               </Typography>
               <Grid container spacing={2} mb={2}>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <TextField
                     label="Recipient Name"
                     value={row.recipient}
@@ -275,7 +277,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <TextField
                     label="Recipient Contact"
                     value={row.recipientContact}
@@ -285,13 +291,16 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                   />
                 </Grid>
               </Grid>
-
               {/* Destination Info */}
               <Typography variant="subtitle2" color="text.secondary" mb={1}>
                 Destination Address
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <TextField
                     label="Street (Optional)"
                     value={row.street}
@@ -300,7 +309,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.region}
                     onChange={(e) => {
@@ -322,7 +335,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.province}
                     onChange={(e) => {
@@ -347,7 +364,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.municipality}
                     onChange={(e) => {
@@ -372,7 +393,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.barangay}
                     onChange={(e) => {

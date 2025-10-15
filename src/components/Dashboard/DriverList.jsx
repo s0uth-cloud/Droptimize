@@ -59,7 +59,7 @@ export default function DriverList({
     const key = driver?.id || driver?.uid || Math.random();
 
     return (
-      <Grid item key={key}>
+      <Grid key={key}>
         <Paper
           elevation={3}
           onClick={() => handleCardClick(driver)}

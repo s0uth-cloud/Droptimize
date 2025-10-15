@@ -77,7 +77,11 @@ export default function DriverDetailsModal({
         <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
           <Grid container spacing={3}>
             {/* Avatar */}
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Avatar
                 src={photo}
                 alt={getDisplayName(driver)}
@@ -102,7 +106,11 @@ export default function DriverDetailsModal({
             </Grid>
 
             {/* Info */}
-            <Grid item xs={12} sm={8}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 8
+              }}>
               <Stack spacing={1}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {getDisplayName(driver)}
