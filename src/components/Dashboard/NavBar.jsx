@@ -83,18 +83,15 @@ export default function NavBar() {
     >
       {/* Logo Section */}
       <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
-        <Link to="/">
-          <Box
-            component="img"
-            src="/logo.svg"
-            alt="Droptimize Logo"
-            sx={{
-              width: 150,
-              height: "auto",
-              cursor: "pointer",
-            }}
-          />
-        </Link>
+        <Box
+          component="img"
+          src="/logo.svg"
+          alt="Droptimize Logo"
+          sx={{
+            width: 150,
+            height: "auto",
+          }}
+        />
       </Box>
 
       <Divider sx={{ width: "80%", mb: 2, borderColor: "rgba(255,255,255,0.3)" }} />
