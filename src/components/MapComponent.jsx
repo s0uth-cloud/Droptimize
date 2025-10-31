@@ -14,8 +14,8 @@ import {
   Save as SaveIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
+  Warehouse as WarehouseIcon
 } from "@mui/icons-material";
-import WarehouseIcon from '@mui/icons-material/Warehouse';
 import {
   doc,
   getDoc,
@@ -564,7 +564,12 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         {!driverPos && (
           <Marker
             position={center}
-            icon={{ url: WarehouseIcon, scaledSize: new window.google.maps.Size(40, 40) }}
+            icon={{ url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48" fill="#1976d2">
+                  <path d="M8 40V17l16-9 16 9v23H8Zm16-16 11-6.1L24 12l-11 5.9L24 24Zm0 2.5L13 30v7h22v-7l-11-3.5Z"/>
+                </svg>
+              `),
+            scaledSize: new window.google.maps.Size(40, 40) }}
           />
         )}
 
