@@ -15,7 +15,7 @@ import {
   Delete as DeleteIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
-import deliverLogo from "/src/assets/box.svg";
+import WarehouseIcon from '@mui/icons-material/Warehouse';
 import {
   doc,
   getDoc,
@@ -564,7 +564,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         {!driverPos && (
           <Marker
             position={center}
-            icon={{ url: deliverLogo, scaledSize: new window.google.maps.Size(40, 40) }}
+            icon={{ url: WarehouseIcon, scaledSize: new window.google.maps.Size(40, 40) }}
           />
         )}
 

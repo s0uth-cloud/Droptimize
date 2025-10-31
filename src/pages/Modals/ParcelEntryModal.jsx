@@ -75,7 +75,6 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
     parcelId: Date.now(), 
     recipient: "",
     recipientContact: "",
-    weight: "",
     street: "",
     status: "Pending",
     region: "",
