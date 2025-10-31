@@ -552,7 +552,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
             icon={{
               path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               scale: 5,
-              fillColor: "#00b2e1",
+              fillColor: "#0064b5",
               fillOpacity: 1,
               strokeWeight: 1,
               rotation: driverHeading || 0,
