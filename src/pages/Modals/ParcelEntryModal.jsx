@@ -299,7 +299,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
               <Grid container spacing={2}>
                 <Grid item xs={12} md={3}>
                   <TextField
-                    label="Street (Optional)"
+                    label="House No./Street"
                     value={row.street}
                     onChange={(e) => updateRow(idx, "street", e.target.value)}
                     size="small"
@@ -422,7 +422,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
               color="success"
               sx={{ borderRadius: 2 }}
               disabled={saving}
-              startIcon={saving ? <CircularProgress size={18} color="inherit" /> : null}
+              startIcon={saving ? <CircularProgress size={18} color="#29bf12" /> : null}
             >
               {saving ? "Saving..." : "Save All"}
             </Button>
