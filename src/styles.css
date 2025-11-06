@@ -1,0 +1,60 @@
+@font-face {
+  font-family: 'LEMON MILK';
+  font-style: normal;
+  font-weight: 400;
+  src:  url('/fonts/LEMONMILK/LEMONMILK-Bold.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-MediumItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-BoldItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-LightItalic.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Medium.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Regular.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-Light.woff2') format('woff2'),
+        url('/fonts/LEMONMILK/LEMONMILK-RegularItalic.woff2') format('woff2');
+  font-display: swap;
+}
+.custom-marker {
+  position: relative;
+  cursor: pointer;
+}
+
+.marker-tooltip {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.custom-marker:hover .marker-tooltip {
+  opacity: 1;
+}
+
+@font-face {
+    font-family: 'Lexend';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/fonts/Lexend/Lexend-Regular.woff2') format('woff2');
+    font-display: swap;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Lexend', sans-serif;
+  background-color: #f3f4f6;
+  color: #000000;
+}
+
+/* Apply Lexend globally */
+body, #root {
+  font-family: 'Lexend', Arial, sans-serif;
+}
+
+/* Force MUI components to inherit Lexend unless LEMON MILK is specified */
+.MuiTypography-root,
+.MuiButton-root,
+.MuiInputBase-root {
+  font-family: 'Lexend', Arial, sans-serif;
+}
+
+/* Exclude components that explicitly use LEMON MILK */
+[data-font="lemon-milk"] {
+  font-family: 'LEMON MILK', sans-serif !important;
+}
