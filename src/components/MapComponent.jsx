@@ -103,7 +103,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   const zoomLockedRef = useRef(false);
   const lastHeadingDegRef = useRef(0);
   const lastHeadingUpdateTsRef = useRef(0);
-  //const lastGeoUpdateTsRef = useRef(0);
+  const lastGeoUpdateTsRef = useRef(0);
 
   const STATIONARY_WINDOW_MS = 3000;
   const STATIONARY_DIST_M = 6;
@@ -132,32 +132,21 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   useEffect(() => {
     if (!isLoaded) return;
     if (!("geolocation" in navigator)) return;
-  const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
-  const watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      if (pos.coords.accuracy > 20) return; // ignore low-accuracy updates
-      const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-
-      // smooth position over last 3 readings
-      posWindowRef.current.push(userLoc);
-      if (posWindowRef.current.length > 3) posWindowRef.current.shift();
-      const avgLat =
-        posWindowRef.current.reduce((sum, p) => sum + p.lat, 0) / posWindowRef.current.length;
-      const avgLng =
-        posWindowRef.current.reduce((sum, p) => sum + p.lng, 0) / posWindowRef.current.length;
-
-      setUserLocation({ lat: avgLat, lng: avgLng });
-
-      // only pan the map if driver is not selected
-      if (!selectedDriver?.id) {
-        if (!center || haversineMeters(center, { lat: avgLat, lng: avgLng }) > 2) {
-          setCenter({ lat: avgLat, lng: avgLng });
+    const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 };
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const now = Date.now();
+        if (now - (lastGeoUpdateTsRef.current || 0) < UPDATE_INTERVAL_MS) return;
+        lastGeoUpdateTsRef.current = now;
+        const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(userLoc);
+        if (!selectedDriver?.id) {
+          setCenter(userLoc);
         }
-      }
-    },
-    (err) => console.warn("geolocation watch error:", err),
-    opts
-  );
+      },
+      (err) => console.warn("geolocation watch error:", err),
+      opts
+    );
     return () => {
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
     };
