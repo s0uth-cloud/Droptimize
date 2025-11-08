@@ -257,17 +257,33 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
   };
 
   const handleFocusOnMap = (driver) => {
+    // If clicking the same driver, deselect
     if (selectedDriver?.id === driver.id) {
       onDriverSelect && onDriverSelect(null);
       return;
     }
     
-    if (!mapRef || !mapRef.current) return;
+    // Get driver location
     const dl = getDriverLatLng(driver);
-    if (!dl) return;
-    mapRef.current.panTo({ lat: dl.latitude, lng: dl.longitude });
-    mapRef.current.setZoom(17);
-    onDriverSelect && onDriverSelect(driver);
+    if (!dl) {
+      alert("Driver location not available");
+      return;
+    }
+    
+    // Focus on map first
+    if (mapRef?.current) {
+      try {
+        mapRef.current.panTo({ lat: dl.latitude, lng: dl.longitude });
+        mapRef.current.setZoom(17);
+      } catch (err) {
+        console.error("Error focusing on map:", err);
+      }
+    }
+    
+    // Then update selected driver after a short delay to ensure map updates first
+    setTimeout(() => {
+      onDriverSelect && onDriverSelect(driver);
+    }, 100);
   };
 
   return (

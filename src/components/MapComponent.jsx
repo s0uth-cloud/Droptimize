@@ -31,10 +31,10 @@ import {
 import { db } from "/src/firebaseConfig";
 
 const CATEGORY_COLORS = {
-  Church: "#4caf50",
+  Church: "#9c27b0",
   Crosswalk: "#2196F3",
-  Schools: "#ff9800",
-  Slowdown: "#9e9e9e",
+  School: "#ff9914",
+  Slowdown: "#29bf12",
 };
 
 const UPDATE_INTERVAL_MS = 1500;
@@ -462,8 +462,14 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   }, [isLoaded, driverPos, driverParcels]);
 
   useEffect(() => {
-    if (!mapRef?.current || !driverPos || !selectedDriver?.id) return;
+    if (!mapRef?.current || !driverPos || !selectedDriver?.id) {
+      zoomLockedRef.current = false;
+      return;
+    }
+    
     const now = Date.now();
+    
+    // Initial center and zoom when driver is first selected
     if (!zoomLockedRef.current) {
       try {
         mapRef.current.setCenter(driverPos);
@@ -475,6 +481,8 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       }
       return;
     }
+    
+    // Continuous tracking with throttling
     if (now - lastPanTsRef.current >= UPDATE_INTERVAL_MS) {
       lastPanTsRef.current = now;
       try {
@@ -483,7 +491,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         console.error("map panTo failed:", err);
       }
     }
-  }, [driverPos, mapRef, selectedDriver?.id]);
+  }, [driverPos, selectedDriver?.id]); // Removed mapRef from dependencies
 
   const getDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;
@@ -652,7 +660,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
               <MenuItem value="Slowdown">Slowdown</MenuItem>
               <MenuItem value="Church">Church</MenuItem>
               <MenuItem value="Crosswalk">Crosswalk</MenuItem>
-              <MenuItem value="Schools">Schools</MenuItem>
+              <MenuItem value="School">School</MenuItem>
             </TextField>
 
             <TextField

@@ -72,13 +72,26 @@ export default function MapView() {
   }, []);
 
   const handleDriverSelect = useCallback((driver) => {
+    // If driver is null, we're deselecting
+    if (!driver) {
+      setSelectedDriver(null);
+      setDrawerOpen(false);
+      return;
+    }
+
+    // Set the selected driver
     setSelectedDriver(driver);
     setDrawerOpen(false);
 
+    // Get position and focus map
     const p = getLatLngFromDriver(driver);
     if (mapRef.current && p) {
-      mapRef.current.panTo(p);
-      mapRef.current.setZoom(17);
+      try {
+        mapRef.current.panTo(p);
+        mapRef.current.setZoom(17);
+      } catch (err) {
+        console.error("Error panning to driver:", err);
+      }
     }
   }, []);
 
