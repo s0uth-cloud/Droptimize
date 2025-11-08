@@ -543,7 +543,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         sx={{
           position: "absolute",
           top: 10,
-          left: "12%",
+          left: "13%",
           display: "flex",
           gap: 1,
           zIndex: 1200,
