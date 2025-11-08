@@ -1,33 +1,33 @@
-import React, { useEffect, useState, useRef } from "react";
 import {
-  GoogleMap,
-  Marker,
+  Add as AddIcon,
+  Close as CloseIcon,
+  Delete as DeleteIcon,
+  Save as SaveIcon,
+  Search as SearchIcon,
+  Traffic as TrafficIcon,
+} from "@mui/icons-material";
+import { Box, Fab, MenuItem, TextField, Tooltip } from "@mui/material";
+import {
   Circle,
-  useJsApiLoader,
-  TrafficLayer,
   DirectionsRenderer,
   Autocomplete as GmapAutocomplete,
+  GoogleMap,
+  Marker,
+  TrafficLayer,
+  useJsApiLoader,
 } from "@react-google-maps/api";
-import { Box, Fab, Tooltip, TextField, MenuItem } from "@mui/material";
 import {
-  Traffic as TrafficIcon,
-  Add as AddIcon,
-  Save as SaveIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
-  Search as SearchIcon,
-} from "@mui/icons-material";
-import deliverLogo from "/src/assets/warehouse.svg";
-import {
+  collection,
   doc,
   getDoc,
-  onSnapshot,
-  collection,
-  query,
-  where,
   onSnapshot as onCollectionSnapshot,
+  onSnapshot,
+  query,
   updateDoc,
+  where,
 } from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
+import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
 
 const CATEGORY_COLORS = {
@@ -67,6 +67,12 @@ function haversineMeters(a, b) {
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
   return R * c;
+}
+
+function smoothHeading(prev, next, alpha) {
+  // Compute shortest angular difference
+  let diff = ((next - prev + 540) % 360) - 180;
+  return normalizeDeg(prev + alpha * diff);
 }
 
 export default function MapComponent({ user, selectedDriver, mapRef }) {
@@ -171,12 +177,11 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   }, [branchId]);
 
   useEffect(() => {
+    // ---- Reset all tracking states when changing driver ----
     setDriverPos(null);
-    setDriverHeading(0);
     setDriverSpeed(0);
+    setDriverHeading(0);
     setDirections(null);
-    setDriverParcels([]);
-    setHasConnection(true);
     prevDriverPosRef.current = null;
     prevSampleTsRef.current = null;
     speedEmaRef.current = 0;
@@ -185,20 +190,18 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     lastHeadingDegRef.current = 0;
     lastHeadingUpdateTsRef.current = 0;
     zoomLockedRef.current = false;
-    lastLocationUpdateRef.current = null;
 
-    if (!selectedDriver?.id) {
-      if (userLocation) {
-        setCenter(userLocation);
-      }
-      return;
-    }
+    if (!selectedDriver?.id) return;
+
+    // ---- Subscribe to Firestore doc for the selected driver ----
+    const userRef = doc(db, "users", selectedDriver.id);
     const unsub = onSnapshot(
-      doc(db, "users", selectedDriver.id),
+      userRef,
       (snap) => {
         if (!snap.exists()) return;
         const d = snap.data();
 
+        // Normalize location structure
         let loc = null;
         if (d?.loc && typeof d.loc.lat === "number" && typeof d.loc.lng === "number") {
           loc = {
@@ -206,32 +209,29 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
             lng: d.loc.lng,
             heading: d.loc.heading,
             speed: d.loc.speed,
-            ts: typeof d.loc.ts === "number" ? d.loc.ts : null,
+            ts: typeof d.loc.ts === "number" ? d.loc.ts : Date.now(),
           };
-        } else if (
-          d?.location &&
-          typeof d.location.latitude === "number" &&
-          typeof d.location.longitude === "number"
-        ) {
+        } else if (d?.location?.latitude && d?.location?.longitude) {
           loc = {
             lat: d.location.latitude,
             lng: d.location.longitude,
             heading: d.heading,
             speed: d.location.speedKmh ?? d.speed,
-            ts: d.location.ts ?? null,
+            ts: d.location.ts ?? Date.now(),
           };
         }
 
         if (!loc) return;
 
-        setHasConnection(true);
-        lastLocationUpdateRef.current = Date.now();
-
         const current = { lat: loc.lat, lng: loc.lng };
+
+        // ---- Update marker + recenter instantly on new driver ----
         setDriverPos(current);
-        setCenter((c) => c ?? current);
+        setCenter(current);
 
         const nowTs = Date.now();
+
+        // ---- Calculate heading ----
         let nextHeading = null;
         if (typeof loc.heading === "number" && Number.isFinite(loc.heading)) {
           nextHeading = normalizeDeg(loc.heading);
@@ -243,26 +243,18 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         }
 
         if (nextHeading != null) {
-          lastHeadingDegRef.current = nextHeading;
-          setDriverHeading(nextHeading);
+          const smoothed = smoothHeading(lastHeadingDegRef.current ?? 0, nextHeading, 0.35);
+          lastHeadingDegRef.current = smoothed;
           lastHeadingUpdateTsRef.current = nowTs;
-        } else {
-          setDriverHeading(lastHeadingDegRef.current || 0);
+          setDriverHeading(smoothed);
         }
 
+        // ---- Calculate speed (EMA + fallback) ----
         let kmh = Number.isFinite(loc.speed) ? Number(loc.speed) : NaN;
-
-        const sampleTs = typeof loc.ts === "number" ? loc.ts : nowTs;
+        const sampleTs = loc.ts ?? nowTs;
         posWindowRef.current.push({ ts: sampleTs, ...current });
         const cutoff = sampleTs - STATIONARY_WINDOW_MS;
         posWindowRef.current = posWindowRef.current.filter((p) => p.ts >= cutoff);
-
-        if (prevDriverPosRef.current) {
-          const distM = haversineMeters(prevDriverPosRef.current, current);
-          if (distM < 3) {
-            kmh = 0;
-          }
-        }
 
         if (!Number.isFinite(kmh)) {
           if (prevDriverPosRef.current && prevSampleTsRef.current) {
@@ -275,42 +267,33 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
           }
         }
 
+        const alpha = 0.25;
+        const mpsRaw = Math.max(0, kmh / 3.6);
+        speedEmaRef.current = alpha * mpsRaw + (1 - alpha) * (speedEmaRef.current || 0);
+        kmh = speedEmaRef.current * 3.6;
+
         if (posWindowRef.current.length >= 2) {
           const first = posWindowRef.current[0];
           const last = posWindowRef.current[posWindowRef.current.length - 1];
           const dM = haversineMeters(first, last);
-          if (dM < STATIONARY_DIST_M) {
-            kmh = 0;
-            speedEmaRef.current = 0;
-          }
+          if (dM < STATIONARY_DIST_M) kmh = 0;
         }
 
-        if (kmh > 0) {
-          const alpha = 0.25;
-          const mpsRaw = Math.max(0, kmh / 3.6);
-          speedEmaRef.current = alpha * mpsRaw + (1 - alpha) * (speedEmaRef.current || 0);
-          kmh = speedEmaRef.current * 3.6;
-        } else {
-          speedEmaRef.current = 0;
-        }
-
-        if (kmh < 3) {
-          kmh = 0;
-          speedEmaRef.current = 0;
-        }
-
+        if (kmh < 3) kmh = 0;
         if (kmh === 0) stopHoldUntilRef.current = sampleTs + ZERO_HOLD_MS;
         if (sampleTs < (stopHoldUntilRef.current || 0)) kmh = 0;
 
         setDriverSpeed(Math.round(kmh));
 
+        // ---- Update refs ----
         prevDriverPosRef.current = current;
         prevSampleTsRef.current = sampleTs;
       },
       (err) => console.error("onSnapshot(user) error:", err)
     );
+
     return () => unsub();
-  }, [selectedDriver]);
+  }, [selectedDriver?.id]);
 
   useEffect(() => {
     if (!selectedDriver || !driverPos) return;
@@ -367,27 +350,34 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     const uidCandidates = [selectedDriver.id, selectedDriver.uid]
       .map((v) => (typeof v === "string" ? v.trim() : v))
       .filter(Boolean);
+
     const parcelsRef = collection(db, "parcels");
-    const qy =
-      uidCandidates.length === 1
-        ? query(
-            parcelsRef,
-            where("driverUid", "==", uidCandidates[0]),
-            where("status", "not-in", ["Delivered", "Cancelled"])
-          )
-        : query(
-            parcelsRef,
-            where("driverUid", "in", uidCandidates),
-            where("status", "not-in", ["Delivered", "Cancelled"])
-          );
-    const unsub = onCollectionSnapshot(
-      qy,
-      (snapshot) => {
-        const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setDriverParcels(docs);
-      },
-      (err) => console.error("onSnapshot(parcels) error:", err)
-    );
+
+    // Firestore does NOT allow 'not-in' when combined with 'in' or multiple fields.
+    // So we split the queries depending on uidCandidates length.
+    let qy;
+
+    if (uidCandidates.length === 1) {
+      qy = query(
+        parcelsRef,
+        where("driverUid", "==", uidCandidates[0]),
+        where("status", "not-in", ["Delivered", "Cancelled"])
+      );
+    } else if (uidCandidates.length > 1) {
+      // For multiple UIDs, Firestore 'in' works, but 'not-in' cannot be combined.
+      // So we fetch with 'in' first and then filter client-side.
+      qy = query(parcelsRef, where("driverUid", "in", uidCandidates));
+    }
+    const unsub = onCollectionSnapshot(qy, (snapshot) => {
+      let docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      
+      // Client-side filtering for 'not-in' if multiple UIDs
+      if (uidCandidates.length > 1) {
+        docs = docs.filter((p) => !["Delivered", "Cancelled"].includes(p.status));
+      }
+
+      setDriverParcels(docs);
+    }, (err) => console.error("onSnapshot(parcels) error:", err));
     return () => unsub();
   }, [selectedDriver?.id, selectedDriver?.uid]);
 
