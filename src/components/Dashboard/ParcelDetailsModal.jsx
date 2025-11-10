@@ -13,14 +13,7 @@ import {
   Paper,
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-
-const statusColors = {
-  delivered: "#29bf12",
-  failed: "#f21b3f",
-  returned: "#f21b3f",
-  "out for delivery": "#ff9914",
-  pending: "#c4cad0",
-};
+import { STATUS_COLORS } from "../../utils/constants";
 
 export default function ParcelDetailsModal({ open, onClose, parcel }) {
   const formatDate = (date) => {
@@ -36,7 +29,7 @@ export default function ParcelDetailsModal({ open, onClose, parcel }) {
 
   if (!parcel) return null;
 
-  const color = statusColors[parcel.status?.toLowerCase()] || "#c4cad0";
+  const color = STATUS_COLORS[parcel.status?.toLowerCase()] || "#c4cad0";
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">

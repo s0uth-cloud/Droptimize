@@ -8,6 +8,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { normalizeDriver } from "../../services/dataNormalizers";
+import { calculateDistanceKm } from "../../utils/geoUtils";
+import { TIME_ALLOWANCES } from "../../utils/constants";
 import {
   Dialog,
   DialogTitle,
@@ -27,25 +29,12 @@ import {
   Chip,
 } from "@mui/material";
 
-function haversineDistanceKM(lat1, lon1, lat2, lon2) {
-  const toRad = (x) => (x * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export default function AssignDriverModal({ open, onClose, driver }) {
   const [parcels, setParcels] = useState({ unassigned: [], assignedToDriver: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [SpeedKmh, setSpeedKmh] = useState(45);
-  const allowanceMinutesPerParcel = 5;
+  const [speedKmh, setSpeedKmh] = useState(45);
 
   const d = normalizeDriver(driver);
 
@@ -70,7 +59,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   }, [driver]);
 
   useEffect(() => {
-    if (!d.id) return;
+    if (!d.id || !driver) return;
     const parcelsRef = collection(db, "parcels");
     const unsub = onSnapshot(parcelsRef, (snapshot) => {
       const allParcels = snapshot.docs.map((docSnap) => ({
@@ -78,7 +67,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
         ...docSnap.data(),
       }));
 
-      const preferred = (driver.preferredRoutes || []).map((r) => ({
+      const preferred = (driver?.preferredRoutes || []).map((r) => ({
         barangay: (r.barangayName || "").toLowerCase(),
         municipality: (r.municipalityName || "").toLowerCase(),
         province: (r.provinceName || "").toLowerCase(),
@@ -107,7 +96,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       setLoading(false);
     });
     return () => unsub();
-  }, [d.id, driver.preferredRoutes]);
+  }, [d.id, driver]);
 
   const computeTotalETA = (list) => {
     if (!userLocation || !list?.length) return "";
@@ -121,7 +110,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       .map((p) => ({ lat: p.destination.latitude, lng: p.destination.longitude }));
     if (!destinations.length) return "";
 
-    const speed = Number(SpeedKmh) || 1;
+    const speed = Number(speedKmh) || 1;
     let fastRoute = [];
     let visited = new Array(destinations.length).fill(false);
     let current = { lat: userLocation.latitude, lng: userLocation.longitude };
@@ -131,7 +120,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       let minDist = Infinity;
       for (let j = 0; j < destinations.length; j++) {
         if (visited[j]) continue;
-        const dist = haversineDistanceKM(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
+        const dist = calculateDistanceKm(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
         if (dist < minDist) {
           minDist = dist;
           nearestIndex = j;
@@ -147,11 +136,11 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     let fastDistance = 0;
     let lastFast = { lat: userLocation.latitude, lng: userLocation.longitude };
     for (const point of fastRoute) {
-      fastDistance += haversineDistanceKM(lastFast.lat, lastFast.lng, point.lat, point.lng);
+      fastDistance += calculateDistanceKm(lastFast.lat, lastFast.lng, point.lat, point.lng);
       lastFast = point;
     }
 
-    const fastMinutes = Math.round((fastDistance / speed) * 60) + allowanceMinutesPerParcel * destinations.length;
+    const fastMinutes = Math.round((fastDistance / speed) * 60) + TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
     const h = Math.floor(fastMinutes / 60);
     const m = fastMinutes % 60;
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -178,7 +167,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     e.preventDefault();
     try {
       await updateDoc(doc(db, "users", d.id), {
-        speedAvg: Number(SpeedKmh) || 0,
+        speedAvg: Number(speedKmh) || 0,
       });
       alert("Speed Average has been saved successfully!");
     } catch (e) {
@@ -320,9 +309,9 @@ export default function AssignDriverModal({ open, onClose, driver }) {
               <TextField
                 size="small"
                 type="number"
-                value={SpeedKmh}
+                value={speedKmh}
                 onChange={(e) => setSpeedKmh(Number(e.target.value))}
-                placeholder="Enter SpeedKmh Average (default 45)"
+                placeholder="Enter Speed Average (default 45)"
                 sx={{ width: 180 }}
               />
               <Button onClick={handleSaveAverage} variant="outlined" color="primary">

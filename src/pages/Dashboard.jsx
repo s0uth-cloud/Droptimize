@@ -13,6 +13,7 @@ import {
   fetchRecentIncidents,
 } from "../services/firebaseService.js";
 import { auth } from "../firebaseConfig.js";
+import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
@@ -92,8 +93,8 @@ export default function Dashboard() {
         flexDirection: "column",
         width: "100%",
         minHeight: "100vh",
-        px: { xs: 2, md: 4 },
-        py: 3,
+        px: responsiveSpacing.sectionPx,
+        py: responsiveSpacing.sectionPy,
         boxSizing: "border-box",
       }}
     >
@@ -105,6 +106,7 @@ export default function Dashboard() {
           fontFamily: "Lexend",
           fontWeight: "bold",
           color: "#00b2e1",
+          fontSize: responsiveFontSizes.h4,
         }}
       >
         Dashboard
@@ -127,7 +129,7 @@ export default function Dashboard() {
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: 3,
+            gap: responsiveSpacing.gapLarge,
             width: "100%",
           }}
         >
@@ -136,7 +138,7 @@ export default function Dashboard() {
             sx={{
               display: "flex",
               flexWrap: "wrap",
-              gap: 3,
+              gap: responsiveSpacing.gapLarge,
             }}
           >
             <Box sx={{ flex: "1 1 250px", minWidth: 250 }}>
@@ -164,20 +166,26 @@ export default function Dashboard() {
           {/* Charts */}
           <Box
             sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 3,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", lg: "repeat(2, 1fr)" },
+              gap: responsiveSpacing.gapLarge,
               width: "100%",
             }}
           >
-            <Box sx={{ flex: "1 1 500px", minWidth: 300, height: { xs: 300, sm: 350, md: 400 } }}>
+            <Box sx={{ 
+              width: "100%",
+              height: responsiveDimensions.chartHeight 
+            }}>
               <DeliveryVolumeChart
                 dailyData={dailyDeliveryData}
                 weeklyData={weeklyDeliveryData}
               />
             </Box>
 
-            <Box sx={{ flex: "1 1 500px", minWidth: 300, height: { xs: 300, sm: 350, md: 400 } }}>
+            <Box sx={{ 
+              width: "100%",
+              height: responsiveDimensions.chartHeight 
+            }}>
               <OverspeedingTrendChart
                 dailyData={dailySpeedData}
                 weeklyData={weeklySpeedData}

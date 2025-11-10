@@ -71,8 +71,11 @@ export function normalizeDriver(raw = {}) {
     Array.isArray(source.parcels) ? source.parcels.length : source.parcelsLeft ?? source.parcelsCount ?? null;
 
   return {
+    // spread original properties first so we can override them
+    ...source,
     // keep original reference for fallbacks
     __raw: source,
+    // normalized fields that should override any original values
     id,
     uid: id,
     fullName,
@@ -84,8 +87,6 @@ export function normalizeDriver(raw = {}) {
     avgSpeed,
     topSpeed,
     parcelsCount,
-    // spread original properties so existing usages that read other fields still work
-    ...source,
   };
 }
 

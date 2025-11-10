@@ -42,19 +42,29 @@ html, body {
   color: #000000;
 }
 
-/* Apply Lexend globally */
-body, #root {
-  font-family: 'Lexend', Arial, sans-serif;
+/* Responsive base font size */
+html {
+  /* 720p and below */
+  font-size: 14px;
 }
 
-/* Force MUI components to inherit Lexend unless LEMON MILK is specified */
-.MuiTypography-root,
-.MuiButton-root,
-.MuiInputBase-root {
-  font-family: 'Lexend', Arial, sans-serif;
+@media (min-width: 1280px) {
+  /* 720p to 1080p */
+  html {
+    font-size: 15px;
+  }
 }
 
-/* Exclude components that explicitly use LEMON MILK */
-[data-font="lemon-milk"] {
-  font-family: 'LEMON MILK', sans-serif !important;
+@media (min-width: 1920px) {
+  /* 1080p base */
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 2560px) {
+  /* 2K and above */
+  html {
+    font-size: 18px;
+  }
 }

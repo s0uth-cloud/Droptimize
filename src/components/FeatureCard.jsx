@@ -1,5 +1,6 @@
 import React from "react";
 import { Card, CardContent, Box, Typography } from "@mui/material";
+import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function FeatureCard({ title, description, icon }) {
   return (
@@ -12,10 +13,10 @@ export default function FeatureCard({ title, description, icon }) {
         backgroundColor: "#ffffff",
         color: "#000000",
         borderRadius: "8px",
-        p: 2,
-        m: 2,
-        width: 300,
-        height: 400,
+        p: responsiveSpacing.cardP,
+        m: responsiveSpacing.gapSmall,
+        width: responsiveDimensions.featureCard.width,
+        height: responsiveDimensions.featureCard.height,
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
         transition: "transform 0.3s ease",
         "&:hover": {
@@ -28,7 +29,7 @@ export default function FeatureCard({ title, description, icon }) {
         src={icon}
         alt={`${title} icon`}
         sx={{
-          width: 200,
+          width: responsiveDimensions.featureCard.iconWidth,
           mb: 2,
         }}
       />
@@ -40,6 +41,7 @@ export default function FeatureCard({ title, description, icon }) {
             fontFamily: "Lexend",
             fontWeight: 600,
             mb: 1,
+            fontSize: responsiveFontSizes.h6,
           }}
         >
           {title}
@@ -50,6 +52,7 @@ export default function FeatureCard({ title, description, icon }) {
           sx={{
             fontFamily: "Lexend",
             color: "#333",
+            fontSize: responsiveFontSizes.body2,
           }}
         >
           {description}

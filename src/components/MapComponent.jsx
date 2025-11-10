@@ -3,14 +3,12 @@ import {
   Close as CloseIcon,
   Delete as DeleteIcon,
   Save as SaveIcon,
-  Search as SearchIcon,
   Traffic as TrafficIcon,
 } from "@mui/icons-material";
 import { Box, Fab, MenuItem, TextField, Tooltip } from "@mui/material";
 import {
   Circle,
   DirectionsRenderer,
-  Autocomplete as GmapAutocomplete,
   GoogleMap,
   Marker,
   TrafficLayer,
@@ -30,54 +28,19 @@ import { useEffect, useRef, useState } from "react";
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
 import { normalizeDriver } from "../services/dataNormalizers";
+import {
+  calculateDistanceMeters,
+  calculateBearing,
+  smoothHeading,
+  normalizeDegrees,
+} from "../utils/geoUtils";
+import { ZONE_COLORS, SPEED_THRESHOLDS, DEFAULT_MAP_CENTER } from "../utils/constants";
 
-const CATEGORY_COLORS = {
-  Church: "#9c27b0",
-  Crosswalk: "#2196F3",
-  School: "#ff9914",
-  Slowdown: "#29bf12",
-};
-
-const UPDATE_INTERVAL_MS = 1500;
-const MOVING_THRESHOLD_M = 3;
-
-function normalizeDeg(d) {
-  return ((d % 360) + 360) % 360;
-}
-function bearingBetween(a, b) {
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const toDeg = (rad) => (rad * 180) / Math.PI;
-  const lat1 = toRad(a.lat);
-  const lat2 = toRad(b.lat);
-  const lon1 = toRad(a.lng);
-  const lon2 = toRad(b.lng);
-  const dLon = lon2 - lon1;
-  const y = Math.sin(dLon) * Math.cos(lat2);
-  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-  let deg = toDeg(Math.atan2(y, x));
-  if (deg < 0) deg += 360;
-  return deg;
-}
-function haversineMeters(a, b) {
-  const R = 6371000;
-  const toRad = (d) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const la1 = toRad(a.lat);
-  const la2 = toRad(b.lat);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-  return R * c;
-}
-
-function smoothHeading(prev, next, alpha) {
-  // Compute shortest angular difference
-  let diff = ((next - prev + 540) % 360) - 180;
-  return normalizeDeg(prev + alpha * diff);
-}
+const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
+const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
 
 export default function MapComponent({ user, selectedDriver, mapRef }) {
-  const [center, setCenter] = useState({ lat: 14.5995, lng: 120.9842 });
+  const [center, setCenter] = useState(DEFAULT_MAP_CENTER);
   const [userLocation, setUserLocation] = useState(null);
   const [showTraffic, setShowTraffic] = useState(true);
   const [addingSlowdown, setAddingSlowdown] = useState(false);
@@ -96,8 +59,6 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   const [driverHeading, setDriverHeading] = useState(0);
   const [driverSpeed, setDriverSpeed] = useState(0);
   const [hasConnection, setHasConnection] = useState(true);
-  const [searchText, setSearchText] = useState("");
-  const autocompleteRef = useRef(null);
 
   const prevDriverPosRef = useRef(null);
   const prevSampleTsRef = useRef(null);
@@ -112,9 +73,9 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   const lastHeadingUpdateTsRef = useRef(0);
   const lastGeoUpdateTsRef = useRef(0);
 
-  const STATIONARY_WINDOW_MS = 3000;
-  const STATIONARY_DIST_M = 6;
-  const ZERO_HOLD_MS = 2000;
+  const STATIONARY_WINDOW_MS = SPEED_THRESHOLDS.STATIONARY_WINDOW_MS;
+  const STATIONARY_DIST_M = SPEED_THRESHOLDS.STATIONARY_DIST_M;
+  const ZERO_HOLD_MS = SPEED_THRESHOLDS.ZERO_HOLD_MS;
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -216,11 +177,11 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         // ---- Calculate heading ----
         let nextHeading = null;
         if (typeof loc.heading === "number" && Number.isFinite(loc.heading)) {
-          nextHeading = normalizeDeg(loc.heading);
+          nextHeading = normalizeDegrees(loc.heading);
         } else if (prevDriverPosRef.current) {
-          const movedM = haversineMeters(prevDriverPosRef.current, current);
+          const movedM = calculateDistanceMeters(prevDriverPosRef.current, current);
           if (movedM > MOVING_THRESHOLD_M) {
-            nextHeading = bearingBetween(prevDriverPosRef.current, current);
+            nextHeading = calculateBearing(prevDriverPosRef.current, current);
           }
         }
 
@@ -240,7 +201,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
 
         if (!Number.isFinite(kmh)) {
           if (prevDriverPosRef.current && prevSampleTsRef.current) {
-            const distM = haversineMeters(prevDriverPosRef.current, current);
+            const distM = calculateDistanceMeters(prevDriverPosRef.current, current);
             const dt = Math.max(0.5, (sampleTs - prevSampleTsRef.current) / 1000);
             const mps = distM > 5 && dt > 0.8 ? distM / dt : 0;
             kmh = mps * 3.6;
@@ -257,7 +218,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         if (posWindowRef.current.length >= 2) {
           const first = posWindowRef.current[0];
           const last = posWindowRef.current[posWindowRef.current.length - 1];
-          const dM = haversineMeters(first, last);
+          const dM = calculateDistanceMeters(first, last);
           if (dM < STATIONARY_DIST_M) kmh = 0;
         }
 
@@ -275,7 +236,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     );
 
     return () => unsub();
-  }, [selectedDriver?.id]);
+  }, [selectedDriver?.id, STATIONARY_WINDOW_MS, STATIONARY_DIST_M, ZERO_HOLD_MS]);
 
   useEffect(() => {
     if (!selectedDriver || !driverPos) return;
@@ -483,88 +444,12 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     setSlowdownPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });
   };
 
-  const safePanZoom = (point) => {
-    const map = mapRef?.current;
-    if (!map) return;
-    if (typeof map.panTo === "function") map.panTo(point);
-    if (typeof map.setZoom === "function") map.setZoom(17);
-  };
-
-  const handlePlaceChanged = () => {
-    const ac = autocompleteRef.current;
-    if (!ac) return;
-    const place = ac.getPlace?.();
-    const loc = place?.geometry?.location;
-    if (loc) {
-      const point = { lat: loc.lat(), lng: loc.lng() };
-      safePanZoom(point);
-    }
-  };
-
-  const geocodeSearch = (query) => {
-    if (!isLoaded || !query?.trim()) return;
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address: query }, (results, status) => {
-      if (status === "OK" && results?.[0]) {
-        const loc = results[0].geometry.location;
-        const point = { lat: loc.lat(), lng: loc.lng() };
-        safePanZoom(point);
-      } else {
-        console.warn("Geocode failed:", status);
-      }
-    });
-  };
-
   if (!isLoaded) {
     return <div style={{ textAlign: "center", marginTop: "2rem" }}>Loading map...</div>;
   }
 
   return (
     <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: 10,
-          left: "13%",
-          display: "flex",
-          gap: 1,
-          zIndex: 1200,
-          width: "min(560px, 90vw)",
-          alignItems: "center",
-        }}
-      >
-        <GmapAutocomplete
-          onLoad={(ac) => (autocompleteRef.current = ac)}
-          onPlaceChanged={handlePlaceChanged}
-          options={{
-            fields: ["geometry", "name", "formatted_address"],
-            componentRestrictions: { country: ["ph"] },
-          }}
-        >
-          <TextField
-            fullWidth
-            size="small"
-            label="Search place"
-            placeholder="Search place or address"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") geocodeSearch(searchText);
-            }}
-            sx={{ bgcolor: "white", borderRadius: 1 }}
-          />
-        </GmapAutocomplete>
-
-        <Fab size="small" color="primary" onClick={() => geocodeSearch(searchText)}>
-          <SearchIcon />
-        </Fab>
-        {searchText && (
-          <Fab size="small" color="default" onClick={() => setSearchText("")}>
-            <CloseIcon />
-          </Fab>
-        )}
-      </Box>
-
       {driverPos ? (
         <Box
           sx={{
@@ -798,8 +683,8 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
               center={zone.location}
               radius={zone.radius}
               options={{
-                strokeColor: CATEGORY_COLORS[zone.category] || "#9e9e9e",
-                fillColor: CATEGORY_COLORS[zone.category] || "#9e9e9e",
+                strokeColor: ZONE_COLORS[zone.category] || "#9e9e9e",
+                fillColor: ZONE_COLORS[zone.category] || "#9e9e9e",
                 fillOpacity: 0.3,
                 strokeWeight: 2,
                 clickable: true,
@@ -831,8 +716,8 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
               center={node}
               radius={15}
               options={{
-                strokeColor: CATEGORY_COLORS.Crosswalk,
-                fillColor: CATEGORY_COLORS.Crosswalk,
+                strokeColor: ZONE_COLORS.Crosswalk,
+                fillColor: ZONE_COLORS.Crosswalk,
                 fillOpacity: 0.15,
                 strokeWeight: 2,
                 clickable: true,
@@ -861,8 +746,8 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
               center={slowdownPin}
               radius={parseInt(slowdownRadius)}
               options={{
-                strokeColor: CATEGORY_COLORS[category] || "#9e9e9e",
-                fillColor: CATEGORY_COLORS[category] || "#9e9e9e",
+                strokeColor: ZONE_COLORS[category] || "#9e9e9e",
+                fillColor: ZONE_COLORS[category] || "#9e9e9e",
                 fillOpacity: 0.3,
                 strokeWeight: 2,
                 clickable: false,

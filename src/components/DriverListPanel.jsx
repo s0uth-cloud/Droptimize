@@ -12,6 +12,16 @@ import {
 } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
 import { normalizeDriver } from "../services/dataNormalizers";
+import { 
+  calculateDistanceKm, 
+  getDriverLocation, 
+  isInsideZone 
+} from "../utils/geoUtils";
+import { getDisplaySpeed } from "../utils/speedUtils";
+import { 
+  CROSSWALK_RADIUS_KM, 
+  CROSSWALK_LIMIT_KMH 
+} from "../utils/constants";
 import {
   Card,
   CardContent,
@@ -27,57 +37,6 @@ import {
 } from "@mui/material";
 import { ExpandMore, MyLocation } from "@mui/icons-material";
 import GiveWarningButton from "./GiveWarningButton.jsx";
-
-const CROSSWALK_RADIUS_KM = 0.015;
-const CROSSWALK_LIMIT_KMH = 10;
-
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-const getDriverLatLng = (driver) => {
-  if (driver?.loc && typeof driver.loc.lat === "number" && typeof driver.loc.lng === "number") {
-    return { latitude: driver.loc.lat, longitude: driver.loc.lng };
-  }
-  if (
-    driver?.location &&
-    typeof driver.location.latitude === "number" &&
-    typeof driver.location.longitude === "number"
-  ) {
-    return { latitude: driver.location.latitude, longitude: driver.location.longitude };
-  }
-  return null;
-};
-
-function isInSlowdownZone(driver, zone) {
-  const dl = getDriverLatLng(driver);
-  if (!dl || !zone?.location) return false;
-  const distKm = haversineDistance(dl.latitude, dl.longitude, zone.location.lat, zone.location.lng);
-  const radiusKm = (zone.radius || 15) / 1000;
-  return distKm <= radiusKm;
-}
-
-function getDisplaySpeed(driver) {
-  // prefer new loc.speed (km/h) written by the mobile app
-  if (typeof driver?.loc?.speed === "number" && isFinite(driver.loc.speed))
-    return Math.round(driver.loc.speed);
-  // legacy shapes
-  if (typeof driver?.location?.speedKmh === "number" && isFinite(driver.location.speedKmh))
-    return Math.round(driver.location.speedKmh);
-  if (typeof driver?.speed === "number" && isFinite(driver.speed))
-    return Math.round(driver.speed);
-  if (typeof driver?.avgSpeed === "number" && isFinite(driver.avgSpeed))
-    return Math.round(driver.avgSpeed);
-  return null;
-}
 
 export default function DriverListPanel({ user, mapRef, onDriverSelect, selectedDriver }) {
   const [drivers, setDrivers] = useState([]);
@@ -143,7 +102,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
     let cancelled = false;
 
     async function checkDriverCrosswalk(driver) {
-      const dl = getDriverLatLng(driver);
+      const dl = getDriverLocation(driver);
       if (!dl) return [driver.id, false];
 
       const lat = dl.latitude;
@@ -170,7 +129,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
         if (Array.isArray(data?.elements)) {
           for (const el of data.elements) {
             if (el.type !== "node") continue;
-            const dKm = haversineDistance(lat, lng, el.lat, el.lon);
+            const dKm = calculateDistanceKm(lat, lng, el.lat, el.lon);
             if (dKm <= CROSSWALK_RADIUS_KM) {
               inside = true;
               break;
@@ -203,7 +162,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
   }, [drivers]);
 
   const getApplicableLimit = (driver) => {
-    const dl = getDriverLatLng(driver);
+    const dl = getDriverLocation(driver);
     if (!dl) return null;
 
     const inCrosswalk = !!crosswalkMap[driver.id];
@@ -216,7 +175,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
           typeof z.location.lng === "number" &&
           typeof z.radius === "number" &&
           typeof z.speedLimit === "number" &&
-          isInSlowdownZone(driver, z)
+          isInsideZone(driver, z)
       )
       .map((z) => z.speedLimit);
 
@@ -239,7 +198,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
 
       await updateDoc(doc(db, "users", driver.id), {
         violations: arrayUnion({
-          driverLocation: getDriverLatLng(driver) || null,
+          driverLocation: getDriverLocation(driver) || null,
           issuedAt: Timestamp.now(),
           message: "Speeding violation",
           distance,
@@ -265,7 +224,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
     }
     
     // Get driver location
-    const dl = getDriverLatLng(driver);
+    const dl = getDriverLocation(driver);
     if (!dl) {
       alert("Driver location not available");
       return;
@@ -372,7 +331,7 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
                     </Box>
                   </Grid>
 
-                  {getDriverLatLng(driver) && (
+                  {getDriverLocation(driver) && (
                     <Grid>
                       <Tooltip title={
                         selectedDriver?.id === driver.id 

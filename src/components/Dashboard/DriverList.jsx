@@ -12,6 +12,7 @@ import {
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import DriverDetailsModal from "./DriverDetailsModal";
 import { normalizeDriver } from "../../services/dataNormalizers";
+import { STATUS_COLORS } from "../../utils/constants";
 
 export default function DriverList({
   drivers = [],
@@ -20,12 +21,6 @@ export default function DriverList({
   onViewMap,
 }) {
   const [selectedDriver, setSelectedDriver] = useState(null);
-
-  const statusColors = {
-    available: "#29bf12",
-    delivering: "#ff9914",
-    offline: "#c4cad0",
-  };
 
   const groupedDrivers = { Available: [], Delivering: [], Offline: [] };
   drivers.forEach((driver) => {
@@ -143,7 +138,7 @@ export default function DriverList({
                 sx={{
                   color: "#fff",
                   textTransform: "capitalize",
-                  backgroundColor: statusColors[displayStatus] || "#c4cad0",
+                  backgroundColor: STATUS_COLORS[displayStatus] || "#c4cad0",
                 }}
               />
 

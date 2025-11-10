@@ -1,5 +1,6 @@
 import { Paper, Typography, Box, Divider } from "@mui/material";
 import { PieChart } from "@mui/x-charts/PieChart";
+import { responsiveFontSizes, responsiveSpacing } from "../../theme/responsiveTheme.js";
 
 export default function ParcelStatusCard({
   delivered = 0,
@@ -20,9 +21,9 @@ export default function ParcelStatusCard({
     <Paper
       elevation={3}
       sx={{
-        p: 2,
-        height: 350,
-        width: 300,
+        p: responsiveSpacing.cardP,
+        height: { xs: 320, md: 340, lg: 350, xl: 350, xxl: 400 },
+        width: { xs: 280, md: 290, lg: 300, xl: 300, xxl: 350 },
         mx: "auto",
         display: "flex",
         flexDirection: "column",
@@ -30,7 +31,7 @@ export default function ParcelStatusCard({
       }}
     >
       {/* Title */}
-      <Typography variant="h6" align="center" gutterBottom sx={{color: "#00b2e1", fontFamily: "Lexend, sans-serif", fontWeight: "bold"}}>
+      <Typography variant="h6" align="center" gutterBottom sx={{color: "#00b2e1", fontFamily: "Lexend, sans-serif", fontWeight: "bold", fontSize: responsiveFontSizes.h6}}>
         Parcel Status Breakdown
       </Typography>
 
@@ -44,7 +45,7 @@ export default function ParcelStatusCard({
             justifyContent: "center",
           }}
         >
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: responsiveFontSizes.body2 }}>
             No data available
           </Typography>
         </Box>
@@ -57,7 +58,7 @@ export default function ParcelStatusCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              minHeight: 180,
+              minHeight: { xs: 160, md: 170, lg: 180, xl: 180, xxl: 200 },
             }}
           >
             <PieChart
@@ -66,6 +67,11 @@ export default function ParcelStatusCard({
               height={200}
               colors={data.map((d) => d.color)}
               valueFormatter={(v) => `${((v / total) * 100).toFixed(0)}%`}
+              sx={{
+                '& .MuiChartsLegend-series text': {
+                  fontSize: `${responsiveFontSizes.caption} !important`,
+                },
+              }}
             />
           </Box>
 
@@ -78,7 +84,7 @@ export default function ParcelStatusCard({
               overflow: "hidden",
             }}
           >
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: responsiveFontSizes.body2 }}>
               Total Parcels: {total}
             </Typography>
             <Divider sx={{ mb: 1 }} />
@@ -101,13 +107,13 @@ export default function ParcelStatusCard({
                 >
                   <Box
                     sx={{
-                      width: 10,
-                      height: 10,
+                      width: { xs: 8, md: 9, lg: 10, xxl: 12 },
+                      height: { xs: 8, md: 9, lg: 10, xxl: 12 },
                       borderRadius: "50%",
                       backgroundColor: color,
                     }}
                   />
-                  <Typography variant="body2" color="textSecondary">
+                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: responsiveFontSizes.caption }}>
                     {id}: {value}
                   </Typography>
                 </Box>
