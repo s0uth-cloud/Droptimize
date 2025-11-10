@@ -3,6 +3,7 @@ import { Box, Paper, Stack, Typography, TextField, Button, InputAdornment, IconB
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import SignUpSuccessMessage from "/src/components/SignUpSuccessMessage.jsx";
 import { registerUser } from "../firebaseConfig";
+import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function SignUpForm() {
   useEffect(() => {
@@ -74,25 +75,26 @@ export default function SignUpForm() {
   }
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+    <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
       <Paper
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          p: 4,
-          width: 320,
+          p: { xs: 3, md: 4, xl: 4, xxl: 5 },
+          width: "100%",
+          maxWidth: responsiveDimensions.formWidth,
           borderRadius: "1rem",
           boxShadow: 3
         }}
       >
-        <Stack spacing={2} alignItems="center">
+        <Stack spacing={{ xs: 1.5, md: 2, xxl: 2.5 }} alignItems="center">
           <Box
             component="img"
             src="/logo.svg"
             alt="Droptimize Logo"
             sx={{
-              maxWidth: 300,
-              mb: 2
+              maxWidth: { xs: 250, md: 280, lg: 300, xl: 300, xxl: 350 },
+              mb: { xs: 1, md: 2 }
             }}
           />
           <Typography
@@ -101,14 +103,15 @@ export default function SignUpForm() {
             sx={{
               fontFamily: "LEMON MILK",
               fontWeight: "bold",
-              color: "#00b2e1"
+              color: "#00b2e1",
+              fontSize: responsiveFontSizes.h5,
             }}
           >
             Sign Up
           </Typography>
 
           {error && (
-            <Typography color="error" align="center" sx={{ fontSize: "0.9rem" }}>
+            <Typography color="error" align="center" sx={{ fontSize: responsiveFontSizes.body2 }}>
               {error}
             </Typography>
           )}
@@ -122,6 +125,14 @@ export default function SignUpForm() {
             helperText={fieldErrors.firstName}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
           />
           <TextField
             label="Last Name"
@@ -132,6 +143,14 @@ export default function SignUpForm() {
             helperText={fieldErrors.lastName}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
           />
           <TextField
             label="Email"
@@ -143,6 +162,14 @@ export default function SignUpForm() {
             helperText={fieldErrors.email}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
           />
           <TextField
             label="Password"
@@ -154,6 +181,14 @@ export default function SignUpForm() {
             helperText={fieldErrors.password}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -176,6 +211,14 @@ export default function SignUpForm() {
             helperText={fieldErrors.confirmPassword}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -193,14 +236,15 @@ export default function SignUpForm() {
             type="submit"
             variant="contained"
             disabled={loading}
+            fullWidth
             sx={{
-              height: 50,
+              height: responsiveDimensions.buttonHeight,
               borderRadius: "10px",
               background: "#00b2e1",
               fontFamily: "LEMON MILK",
-              fontSize: loading ? "16px" : "18px",
-              padding: "1rem 2rem",
-              mt: 2,
+              fontSize: responsiveFontSizes.button,
+              padding: `${responsiveDimensions.buttonPy.xs}rem ${responsiveDimensions.buttonPx.xs}rem`,
+              mt: { xs: 1.5, md: 2 },
               "&:hover": {
                 background: "#0064b5",
               },
@@ -209,7 +253,7 @@ export default function SignUpForm() {
             {loading ? "Registering..." : "Register"}
           </Button>
 
-          <Typography variant="body2" align="center">
+          <Typography variant="body2" align="center" sx={{ fontSize: responsiveFontSizes.body2 }}>
             Already have an account?{" "}
             <Link
               href="/login"

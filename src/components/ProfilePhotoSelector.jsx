@@ -112,7 +112,6 @@ export default function ProfilePhotoSelector({ profile, setProfile, userId }) {
         sx={{
           backgroundColor: "#00b2e1",
           "&:hover": { backgroundColor: "#00a1d6" },
-          fontFamily: "Lexend",
           fontWeight: 600,
           fontSize: "1rem",
           borderRadius: "10px",
@@ -129,7 +128,6 @@ export default function ProfilePhotoSelector({ profile, setProfile, userId }) {
         variant="h5"
         sx={{
           mt: 1,
-          fontFamily: "Lexend",
           fontWeight: 700,
           color: "#333",
           textAlign: "center",

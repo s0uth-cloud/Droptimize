@@ -17,36 +17,15 @@ import MapIcon from "@mui/icons-material/Map";
 import { arrayUnion, doc, Timestamp, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
-import { normalizeDriver } from "../../services/dataNormalizers";
-
-const statusColors = { available: "#29bf12", delivering: "#ff9914", offline: "#c4cad0" };
-const CROSSWALK_RADIUS_KM = 0.015;
-const CROSSWALK_LIMIT_KMH = 10;
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function isInsideZone(loc, zone) {
-  if (!loc || !zone?.location) return false;
-  const dKm = haversineKm(loc.latitude, loc.longitude, zone.location.lat, zone.location.lng);
-  const radiusKm = (zone.radius || 15) / 1000;
-  return dKm <= radiusKm;
-}
-
-function getDisplaySpeed(driver) {
-  if (!driver) return null;
-  if (Number.isFinite(driver.speed)) return Math.round(driver.speed);
-  if (Number.isFinite(driver.avgSpeed)) return Math.round(driver.avgSpeed);
-  return null;
-}
+import { normalizeDriver } from "../../services";
+import {
+  isInsideZone,
+  calculateDistanceKm,
+  getDisplaySpeed,
+  STATUS_COLORS,
+  CROSSWALK_RADIUS_KM,
+  CROSSWALK_LIMIT_KMH,
+} from "../../utils";
 
 export default function DriverDetailsModal({ driver, open, onClose, onAssignParcel }) {
   const navigate = useNavigate();
@@ -96,7 +75,7 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
         if (Array.isArray(data?.elements)) {
           for (const el of data.elements) {
             if (el.type !== "node") continue;
-            const dKm = haversineKm(lat, lng, el.lat, el.lon);
+            const dKm = calculateDistanceKm(lat, lng, el.lat, el.lon);
             if (dKm <= CROSSWALK_RADIUS_KM) {
               inside = true;
               break;
@@ -184,7 +163,7 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
           variant="h6"
           fontWeight="bold"
           mb={3}
-          sx={{ color: "#00b2e1", fontFamily: "Lexend" }}
+          sx={{ color: "#00b2e1" }}
         >
           Driver Details
         </Typography>
@@ -200,7 +179,7 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
                 size="small"
                 sx={{
                   textTransform: "capitalize",
-                  backgroundColor: statusColors[status] || "#c4cad0",
+                  backgroundColor: STATUS_COLORS[status] || "#c4cad0",
                   color: "#fff",
                   fontWeight: 500,
                 }}

@@ -9,6 +9,7 @@ import QRCode from "react-qr-code";
 import SidebarFooterAccount from "./SidebarFooterAccount.jsx";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
+import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../../theme/responsiveTheme.js";
 
 export default function NavBar() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -58,36 +59,36 @@ export default function NavBar() {
     <Drawer
       variant="permanent"
       sx={{
-        width: 250,
+        width: responsiveDimensions.drawerWidth,
         flexShrink: 0,
         "& .MuiDrawer-paper": {
-          width: 250,
+          width: responsiveDimensions.drawerWidth,
           boxSizing: "border-box",
           backgroundColor: "#ffffff",
           color: "#000",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          pt: 2,
-          pb: 2,
+          pt: responsiveSpacing.gapMedium,
+          pb: responsiveSpacing.gapMedium,
           fontFamily: "Lexend, sans-serif",
         },
       }}
     >
       {/* Logo Section */}
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+      <Box sx={{ mb: responsiveSpacing.gapLarge, display: "flex", justifyContent: "center" }}>
         <Box
           component="img"
           src="/logo.svg"
           alt="Droptimize Logo"
           sx={{
-            width: 150,
+            width: { xs: 120, md: 130, lg: 150, xl: 150, xxl: 180 },
             height: "auto",
           }}
         />
       </Box>
 
-      <Divider sx={{ width: "80%", mb: 2, borderColor: "rgba(255,255,255,0.3)" }} />
+      <Divider sx={{ width: "80%", mb: responsiveSpacing.gapMedium, borderColor: "rgba(255,255,255,0.3)" }} />
 
       {/* Navigation List */}
       <List sx={{ width: "100%", flexGrow: 1 }}>
@@ -105,12 +106,12 @@ export default function NavBar() {
               "&:hover": {
                 backgroundColor: "#f0f0f0",
               },
-              pl: 3,
-              py: 1.5,
+              pl: responsiveSpacing.gapLarge,
+              py: { xs: 1.2, md: 1.5, xxl: 2 },
               transition: "background-color 0.2s ease-in-out",
             }}
           >
-            <ListItemIcon sx={{ color: "#00b2e1", minWidth: 40 }}>
+            <ListItemIcon sx={{ color: "#00b2e1", minWidth: { xs: 35, md: 40, xxl: 50 } }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText
@@ -118,24 +119,24 @@ export default function NavBar() {
               primaryTypographyProps={{
                 fontFamily: "Lexend, sans-serif",
                 fontWeight: 700,
-                fontSize: "1.25rem",
+                fontSize: responsiveFontSizes.nav,
               }}
             />
           </ListItemButton>
         ))}
       </List>
 
-      <Divider sx={{ width: "80%", mb: 2, borderColor: "rgba(255,255,255,0.3)" }} />
+      <Divider sx={{ width: "80%", mb: responsiveSpacing.gapMedium, borderColor: "rgba(255,255,255,0.3)" }} />
 
       {/* QR Code Section */}
       {branchId && (
         <Box
           sx={{
             textAlign: "center",
-            mb: 2,
-            px: 2,
+            mb: responsiveSpacing.gapMedium,
+            px: responsiveSpacing.gapMedium,
             backgroundColor: "#00b2e1",
-            py: 2,
+            py: responsiveSpacing.gapMedium,
           }}
         >
           <Typography
@@ -143,7 +144,7 @@ export default function NavBar() {
             sx={{
               fontFamily: "Lexend, sans-serif",
               fontWeight: 700,
-              fontSize: "0.875rem",
+              fontSize: responsiveFontSizes.body2,
               mb: 1,
               color: "#fff",
               letterSpacing: "0.05em",
@@ -159,9 +160,9 @@ export default function NavBar() {
               alignItems: "center",
               backgroundColor: "#fff",
               borderRadius: 2,
-              p: 1.5,
-              width: 140,
-              height: 140,
+              p: { xs: 1.2, md: 1.5, xxl: 2 },
+              width: responsiveDimensions.qrCodeContainer,
+              height: responsiveDimensions.qrCodeContainer,
               mx: "auto",
             }}
           >
@@ -179,6 +180,7 @@ export default function NavBar() {
               color: "#fff",
               display: "block",
               fontFamily: "Lexend, sans-serif",
+              fontSize: responsiveFontSizes.caption,
             }}
           >
             {branch?.branchName || "Branch ID: " + branchId}

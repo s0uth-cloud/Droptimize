@@ -20,15 +20,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { useState, useEffect } from "react";
 import ParcelDetailsModal from "/src/components/Dashboard/ParcelDetailsModal";
 import { doc, deleteDoc } from "firebase/firestore";
-import { db } from "/src/firebaseConfig"; // make sure your Firestore instance is imported
-
-const statusColors = {
-delivered: "#29bf12",
-failed: "#f21b3f",
-returned: "#f21b3f",
-"out for delivery": "#ff9914",
-pending: "#c4cad0",
-};
+import { db } from "/src/firebaseConfig";
+import { STATUS_COLORS } from "../../utils";
 
 const statusOrder = ["pending", "out for delivery", "delivered", "failed", "returned"];
 
@@ -108,7 +101,7 @@ return (
 {sortedParcels.map((parcel, index) => {
 const statusKey = parcel.status?.toLowerCase() || "pending";
 const isInvalid = !parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null;
-const color = isInvalid ? "#f21b3f" : (statusColors[statusKey] || "#c4cad0");
+const color = isInvalid ? "#f21b3f" : (STATUS_COLORS[statusKey] || "#c4cad0");
 
 
       return (

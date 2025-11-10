@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   collection,
   onSnapshot,
@@ -7,7 +7,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
-import { normalizeDriver } from "../../services/dataNormalizers";
+import { normalizeDriver } from "../../services";
+import { calculateDistanceKm, TIME_ALLOWANCES } from "../../utils";
 import {
   Dialog,
   DialogTitle,
@@ -27,25 +28,14 @@ import {
   Chip,
 } from "@mui/material";
 
-function haversineDistanceKM(lat1, lon1, lat2, lon2) {
-  const toRad = (x) => (x * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
 export default function AssignDriverModal({ open, onClose, driver }) {
   const [parcels, setParcels] = useState({ unassigned: [], assignedToDriver: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [SpeedKmh, setSpeedKmh] = useState(45);
-  const allowanceMinutesPerParcel = 5;
+  const [speedKmh, setSpeedKmh] = useState(45);
+  const [etcText, setEtcText] = useState("");
+  const [calculatingETC, setCalculatingETC] = useState(false);
 
   const d = normalizeDriver(driver);
 
@@ -70,7 +60,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   }, [driver]);
 
   useEffect(() => {
-    if (!d.id) return;
+    if (!d.id || !driver) return;
     const parcelsRef = collection(db, "parcels");
     const unsub = onSnapshot(parcelsRef, (snapshot) => {
       const allParcels = snapshot.docs.map((docSnap) => ({
@@ -78,7 +68,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
         ...docSnap.data(),
       }));
 
-      const preferred = (driver.preferredRoutes || []).map((r) => ({
+      const preferred = (driver?.preferredRoutes || []).map((r) => ({
         barangay: (r.barangayName || "").toLowerCase(),
         municipality: (r.municipalityName || "").toLowerCase(),
         province: (r.provinceName || "").toLowerCase(),
@@ -107,10 +97,11 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       setLoading(false);
     });
     return () => unsub();
-  }, [d.id, driver.preferredRoutes]);
+  }, [d.id, driver]);
 
-  const computeTotalETA = (list) => {
-    if (!userLocation || !list?.length) return "";
+  const computeTotalETA = useCallback(async (list) => {
+    if (!userLocation || !list?.length || !window.google) return "";
+    
     const destinations = list
       .filter(
         (p) =>
@@ -119,43 +110,97 @@ export default function AssignDriverModal({ open, onClose, driver }) {
           p.destination.longitude != null
       )
       .map((p) => ({ lat: p.destination.latitude, lng: p.destination.longitude }));
+    
     if (!destinations.length) return "";
 
-    const speed = Number(SpeedKmh) || 1;
-    let fastRoute = [];
-    let visited = new Array(destinations.length).fill(false);
-    let current = { lat: userLocation.latitude, lng: userLocation.longitude };
+    try {
+      // Use Google Maps Directions API for accurate road-based ETA
+      const directionsService = new window.google.maps.DirectionsService();
+      
+      // Build optimized route with multiple waypoints
+      const origin = new window.google.maps.LatLng(userLocation.latitude, userLocation.longitude);
+      const waypoints = destinations.slice(0, -1).map(dest => ({
+        location: new window.google.maps.LatLng(dest.lat, dest.lng),
+        stopover: true
+      }));
+      const destination = new window.google.maps.LatLng(
+        destinations[destinations.length - 1].lat,
+        destinations[destinations.length - 1].lng
+      );
 
-    for (let i = 0; i < destinations.length; i++) {
-      let nearestIndex = -1;
-      let minDist = Infinity;
-      for (let j = 0; j < destinations.length; j++) {
-        if (visited[j]) continue;
-        const dist = haversineDistanceKM(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
-        if (dist < minDist) {
-          minDist = dist;
-          nearestIndex = j;
+      const result = await new Promise((resolve, reject) => {
+        directionsService.route(
+          {
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            optimizeWaypoints: true, // Let Google optimize the route
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (result, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK) {
+              resolve(result);
+            } else {
+              reject(status);
+            }
+          }
+        );
+      });
+
+      // Calculate total duration from all legs
+      let totalSeconds = 0;
+      result.routes[0].legs.forEach(leg => {
+        totalSeconds += leg.duration.value; // duration in seconds
+      });
+
+      // Add time allowance per parcel
+      const allowanceMinutes = TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
+      const totalMinutes = Math.round(totalSeconds / 60) + allowanceMinutes;
+      
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+      
+    } catch (error) {
+      console.error("Error calculating ETA with Google Maps:", error);
+      
+      // Fallback to straight-line distance calculation
+      const speed = Number(speedKmh) || 45;
+      let fastRoute = [];
+      let visited = new Array(destinations.length).fill(false);
+      let current = { lat: userLocation.latitude, lng: userLocation.longitude };
+
+      for (let i = 0; i < destinations.length; i++) {
+        let nearestIndex = -1;
+        let minDist = Infinity;
+        for (let j = 0; j < destinations.length; j++) {
+          if (visited[j]) continue;
+          const dist = calculateDistanceKm(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestIndex = j;
+          }
+        }
+        if (nearestIndex !== -1) {
+          visited[nearestIndex] = true;
+          fastRoute.push(destinations[nearestIndex]);
+          current = destinations[nearestIndex];
         }
       }
-      if (nearestIndex !== -1) {
-        visited[nearestIndex] = true;
-        fastRoute.push(destinations[nearestIndex]);
-        current = destinations[nearestIndex];
+
+      let fastDistance = 0;
+      let lastFast = { lat: userLocation.latitude, lng: userLocation.longitude };
+      for (const point of fastRoute) {
+        fastDistance += calculateDistanceKm(lastFast.lat, lastFast.lng, point.lat, point.lng);
+        lastFast = point;
       }
-    }
 
-    let fastDistance = 0;
-    let lastFast = { lat: userLocation.latitude, lng: userLocation.longitude };
-    for (const point of fastRoute) {
-      fastDistance += haversineDistanceKM(lastFast.lat, lastFast.lng, point.lat, point.lng);
-      lastFast = point;
+      const fastMinutes = Math.round((fastDistance / speed) * 60) + TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
+      const h = Math.floor(fastMinutes / 60);
+      const m = fastMinutes % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
-
-    const fastMinutes = Math.round((fastDistance / speed) * 60) + allowanceMinutesPerParcel * destinations.length;
-    const h = Math.floor(fastMinutes / 60);
-    const m = fastMinutes % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
+  }, [userLocation, speedKmh]);
 
   const handleAssign = async (parcel) => {
     if (!parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null) {
@@ -178,7 +223,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     e.preventDefault();
     try {
       await updateDoc(doc(db, "users", d.id), {
-        speedAvg: Number(SpeedKmh) || 0,
+        speedAvg: Number(speedKmh) || 0,
       });
       alert("Speed Average has been saved successfully!");
     } catch (e) {
@@ -282,7 +327,21 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     (p) => p.destination && p.destination.latitude !== null && p.destination.longitude !== null
   ).length;
   const invalidAssignedCount = assignedCount - validAssignedCount;
-  const etcText = computeTotalETA(parcels.assignedToDriver);
+
+  // Calculate ETC whenever assigned parcels change
+  useEffect(() => {
+    const calculateETC = async () => {
+      if (parcels.assignedToDriver.length === 0) {
+        setEtcText("");
+        return;
+      }
+      setCalculatingETC(true);
+      const result = await computeTotalETA(parcels.assignedToDriver);
+      setEtcText(result);
+      setCalculatingETC(false);
+    };
+    calculateETC();
+  }, [parcels.assignedToDriver, computeTotalETA]);
 
   return (
     <Dialog
@@ -312,7 +371,11 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                   sx={{ bgcolor: "#f21b3f", color: "#fff" }}
                 />
               )}
-              {etcText && <Chip label={`ETC: ${etcText}`} />}
+              {calculatingETC ? (
+                <Chip label="Calculating ETC..." icon={<CircularProgress size={16} />} />
+              ) : (
+                etcText && <Chip label={`ETC: ${etcText}`} />
+              )}
             </Stack>
 
             <Stack direction="row" spacing={1} mt={2} alignItems="center">
@@ -320,9 +383,9 @@ export default function AssignDriverModal({ open, onClose, driver }) {
               <TextField
                 size="small"
                 type="number"
-                value={SpeedKmh}
+                value={speedKmh}
                 onChange={(e) => setSpeedKmh(Number(e.target.value))}
-                placeholder="Enter SpeedKmh Average (default 45)"
+                placeholder="Enter Speed Average (default 45)"
                 sx={{ width: 180 }}
               />
               <Button onClick={handleSaveAverage} variant="outlined" color="primary">

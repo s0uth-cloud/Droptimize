@@ -20,6 +20,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { sendPasswordResetEmail, fetchSignInMethodsForEmail } from "firebase/auth";
 import { checkAuth, auth , loginUser } from "../firebaseConfig";
+import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function LogInForm() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -148,25 +149,26 @@ const handleResetPassword = async () => {
 
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+    <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
       <Paper
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          p: 4,
-          width: 320,
+          p: { xs: 3, md: 4, xl: 4, xxl: 5 },
+          width: "100%",
+          maxWidth: responsiveDimensions.formWidth,
           borderRadius: "1rem",
           boxShadow: 3,
         }}
       >
-        <Stack spacing={2} alignItems="center">
+        <Stack spacing={{ xs: 1.5, md: 2, xxl: 2.5 }} alignItems="center">
           <Box
             component="img"
             src="/logo.svg"
             alt="Droptimize Logo"
             sx={{
-              maxWidth: 300,
-              mb: 2,
+              maxWidth: { xs: 250, md: 280, lg: 300, xl: 300, xxl: 350 },
+              mb: { xs: 1, md: 2 },
             }}
           />
           <Typography
@@ -176,13 +178,14 @@ const handleResetPassword = async () => {
               fontFamily: "LEMON MILK",
               fontWeight: "bold",
               color: "#00b2e1",
+              fontSize: responsiveFontSizes.h5,
             }}
           >
             Log In
           </Typography>
 
           {error && (
-            <Typography variant="body2" color="error" align="center">
+            <Typography variant="body2" color="error" align="center" sx={{ fontSize: responsiveFontSizes.body2 }}>
               {error}
             </Typography>
           )}
@@ -198,7 +201,15 @@ const handleResetPassword = async () => {
             error={!!fieldErrors.email}
             helperText={fieldErrors.email || ""}
             size="small"
-            sx={{ mb: 2 }}
+            sx={{
+              mb: 2,
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
           />
 
           <TextField
@@ -212,6 +223,14 @@ const handleResetPassword = async () => {
             error={!!fieldErrors.password}
             helperText={fieldErrors.password || ""}
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -236,7 +255,7 @@ const handleResetPassword = async () => {
                 }}
                 id="rememberMe"
               />
-              <Typography variant="body2">Remember me</Typography>
+              <Typography variant="body2" sx={{ fontSize: responsiveFontSizes.body2 }}>Remember me</Typography>
             </Box>
 
             <Link
@@ -248,7 +267,7 @@ const handleResetPassword = async () => {
                 }}
               underline="hover"
               sx={{
-                fontSize: 14,
+                fontSize: responsiveFontSizes.body2,
                 color: "#00b2e1",
                 fontWeight: 600,
                 cursor: "pointer",
@@ -265,13 +284,14 @@ const handleResetPassword = async () => {
             type="submit"
             variant="contained"
             disabled={loading}
+            fullWidth
             sx={{
-              height: "50px",
+              height: responsiveDimensions.buttonHeight,
               borderRadius: "10px",
               background: "#00b2e1",
               fontFamily: "LEMON MILK",
-              fontSize: loading ? "16px" : "18px",
-              padding: "1rem 2rem",
+              fontSize: responsiveFontSizes.button,
+              padding: `${responsiveDimensions.buttonPy.xs}rem ${responsiveDimensions.buttonPx.xs}rem`,
               margin: "1rem 0",
               "&:hover": {
                 background: "#0064b5",
@@ -282,7 +302,7 @@ const handleResetPassword = async () => {
             {loading ? "Logging in..." : "Log In"}
           </Button>
 
-          <Typography variant="body2" align="center">
+          <Typography variant="body2" align="center" sx={{ fontSize: responsiveFontSizes.body2 }}>
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
@@ -305,7 +325,7 @@ const handleResetPassword = async () => {
             sx: {
               p: 1,
               borderRadius: "1rem",
-              width: 400,
+              width: { xs: 320, md: 380, lg: 400, xl: 400, xxl: 450 },
               maxWidth: "90%",
             },
           }}
@@ -315,7 +335,7 @@ const handleResetPassword = async () => {
               fontFamily: "LEMON MILK",
               fontWeight: "bold",
               color: "#00b2e1",
-              fontSize: "1.5rem",
+              fontSize: responsiveFontSizes.h5,
               textAlign: "center",
             }}
           >
@@ -328,7 +348,7 @@ const handleResetPassword = async () => {
         sx={{
         mt: 1,
         textAlign: "center",
-        fontSize: "1rem",
+        fontSize: responsiveFontSizes.body1,
         color: "#29bf12",
         }}
         >
@@ -347,6 +367,14 @@ const handleResetPassword = async () => {
         helperText={resetError}
         disabled={resetLoading}
         size="small"
+        sx={{
+          '& .MuiInputBase-root': {
+            fontSize: responsiveFontSizes.body1,
+          },
+          '& .MuiInputLabel-root': {
+            fontSize: responsiveFontSizes.body1,
+          },
+        }}
         />
         )} </DialogContent>
 
@@ -359,6 +387,7 @@ const handleResetPassword = async () => {
         fontWeight: 600,
         textTransform: "none",
         color: "#00b2e1",
+        fontSize: responsiveFontSizes.button,
         }}
         >
         Cancel </Button>
@@ -374,7 +403,8 @@ const handleResetPassword = async () => {
               fontFamily: "LEMON MILK",
               fontWeight: "bold",
               borderRadius: "10px",
-              padding: "0.75rem 1.5rem",
+              fontSize: responsiveFontSizes.button,
+              padding: { xs: "0.6rem 1.2rem", md: "0.75rem 1.5rem", xxl: "0.9rem 1.8rem" },
               textTransform: "none",
               "&:hover": {
                 background: "#0064b5",

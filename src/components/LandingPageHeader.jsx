@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { AppBar, Toolbar, Box, Button, Typography, Stack, Slide } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../theme/responsiveTheme.js";
 
 export default function LandingPageHeader() {
   const [visible, setVisible] = useState(true);
@@ -34,20 +35,20 @@ export default function LandingPageHeader() {
           backgroundColor: "#fff",
           boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
           color: "#000",
-          px: { xs: 2, sm: 4 },
+          px: { xs: 2, sm: 3, md: 4, xl: 5, xxl: 6 },
         }}
       >
-        <Toolbar disableGutters sx={{ justifyContent: "space-between" }}>
+        <Toolbar disableGutters sx={{ justifyContent: "space-between", minHeight: { xs: 56, md: 64, xl: 70, xxl: 80 } }}>
           {/* Logo */}
           <Box
             sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
             onClick={() => navigate("/")}
           >
-            <Box component="img" src="/logo.svg" alt="Droptimize Logo" sx={{ width: 150 }} />
+            <Box component="img" src="/logo.svg" alt="Droptimize Logo" sx={{ width: responsiveDimensions.logoWidth }} />
           </Box>
 
           {/* Navigation */}
-          <Stack direction="row" spacing={2} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
+          <Stack direction="row" spacing={responsiveSpacing.gapSmall} sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
             {["Home", "Features", "About", "Contact"].map((item) => (
               <Typography
                 key={item}
@@ -56,8 +57,8 @@ export default function LandingPageHeader() {
                   fontWeight: 600,
                   fontFamily: "Lexend, sans-serif",
                   color: "#00b2e1",
-                  fontSize: { xs: "0.85rem", md: "1rem" },
-                  px: 2,
+                  fontSize: responsiveFontSizes.body1,
+                  px: { xs: 1.5, lg: 2, xxl: 2.5 },
                   py: 0.5,
                   borderRadius: 1,
                   "&:hover": { color: "#fff", backgroundColor: "#00b2e1" },
@@ -76,7 +77,7 @@ export default function LandingPageHeader() {
           </Stack>
 
           {/* Static Auth Buttons */}
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={responsiveSpacing.gapSmall} alignItems="center">
             <Button
               variant="contained"
               onClick={() => navigate("/login")}
@@ -85,6 +86,9 @@ export default function LandingPageHeader() {
                 fontWeight: 600,
                 fontFamily: "Lexend, sans-serif",
                 textTransform: "none",
+                fontSize: responsiveFontSizes.button,
+                px: responsiveDimensions.buttonPx,
+                py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
                 "&:hover": { backgroundColor: "#0064b5" },
               }}
             >
@@ -98,6 +102,9 @@ export default function LandingPageHeader() {
                 fontWeight: 600,
                 fontFamily: "Lexend, sans-serif",
                 textTransform: "none",
+                fontSize: responsiveFontSizes.button,
+                px: responsiveDimensions.buttonPx,
+                py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
                 "&:hover": { backgroundColor: "#0064b5" },
               }}
             >

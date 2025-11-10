@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import ParcelsHeader from "../components/Dashboard/ParcelsHeader.jsx";
 import ParcelList from "../components/Dashboard/ParcelList.jsx";
 import CSVModal from "./Modals/ParcelEntryModal.jsx";
-import { fetchAllParcels } from "../services/firebaseService.js";
+import { fetchAllParcels } from "../services.js";
 import { auth } from "../firebaseConfig.js";
 
 export default function Parcels() {

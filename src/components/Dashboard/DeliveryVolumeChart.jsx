@@ -15,7 +15,7 @@ export default function DeliveryVolumeChart({ dailyData = [], weeklyData = [] })
   return (
     <Paper elevation={3} sx={{ p: 2, height: 350, minWidth: 700 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-        <Typography variant="h6" sx={{color: "#00b2e1", fontFamily: "Lexend, sans-serif", fontWeight: "bold"}}>Delivery Volume & Success Rate</Typography>
+        <Typography variant="h6" sx={{color: "#00b2e1", fontWeight: "bold"}}>Delivery Volume & Success Rate</Typography>
         <ToggleButtonGroup value={view} exclusive onChange={handleChange} size="small">
           <ToggleButton value="daily">Daily</ToggleButton>
           <ToggleButton value="weekly">Weekly</ToggleButton>
