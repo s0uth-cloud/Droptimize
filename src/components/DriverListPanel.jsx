@@ -11,17 +11,17 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
-import { normalizeDriver } from "../services/dataNormalizers";
-import { 
-  calculateDistanceKm, 
-  getDriverLocation, 
-  isInsideZone 
-} from "../utils/geoUtils";
-import { getDisplaySpeed } from "../utils/speedUtils";
-import { 
-  CROSSWALK_RADIUS_KM, 
-  CROSSWALK_LIMIT_KMH 
-} from "../utils/constants";
+import { normalizeDriver } from "../services";
+import {
+  calculateDistanceKm,
+  getDriverLocation,
+  isInsideZone,
+  getDisplaySpeed,
+  CROSSWALK_RADIUS_KM,
+  CROSSWALK_LIMIT_KMH,
+  STATUS_COLORS,
+  DRIVER_STATUS,
+} from "../utils";
 import {
   Card,
   CardContent,

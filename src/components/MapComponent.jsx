@@ -12,7 +12,6 @@ import {
   GoogleMap,
   Marker,
   TrafficLayer,
-  useJsApiLoader,
 } from "@react-google-maps/api";
 import {
   collection,
@@ -27,14 +26,16 @@ import {
 import { useEffect, useRef, useState } from "react";
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
-import { normalizeDriver } from "../services/dataNormalizers";
+import { normalizeDriver } from "../services";
 import {
   calculateDistanceMeters,
   calculateBearing,
   smoothHeading,
   normalizeDegrees,
-} from "../utils/geoUtils";
-import { ZONE_COLORS, SPEED_THRESHOLDS, DEFAULT_MAP_CENTER } from "../utils/constants";
+  ZONE_COLORS,
+  SPEED_THRESHOLDS,
+  DEFAULT_MAP_CENTER,
+} from "../utils";
 
 const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
 const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
@@ -77,11 +78,6 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   const STATIONARY_DIST_M = SPEED_THRESHOLDS.STATIONARY_DIST_M;
   const ZERO_HOLD_MS = SPEED_THRESHOLDS.ZERO_HOLD_MS;
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places", "geometry"],
-  });
-
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -98,7 +94,6 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   }, [user]);
 
   useEffect(() => {
-    if (!isLoaded) return;
     if (!("geolocation" in navigator)) return;
     const opts = { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 };
     const watchId = navigator.geolocation.watchPosition(
@@ -118,7 +113,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     return () => {
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
     };
-  }, [isLoaded, selectedDriver]);
+  }, [selectedDriver]);
 
   useEffect(() => {
     if (!branchId) return;
@@ -192,43 +187,57 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
           setDriverHeading(smoothed);
         }
 
-        // ---- Calculate speed (EMA + fallback) ----
-        let kmh = Number.isFinite(loc.speed) ? Number(loc.speed) : NaN;
+        let kmh = Number.isFinite(loc.speed) && loc.speed >= 0 ? Number(loc.speed) : NaN;
         const sampleTs = loc.ts ?? nowTs;
-        posWindowRef.current.push({ ts: sampleTs, ...current });
+        const accuracy = loc.accuracy || 50;
+        
+        posWindowRef.current.push({ ts: sampleTs, ...current, accuracy });
         const cutoff = sampleTs - STATIONARY_WINDOW_MS;
         posWindowRef.current = posWindowRef.current.filter((p) => p.ts >= cutoff);
 
-        if (!Number.isFinite(kmh)) {
+        if (!Number.isFinite(kmh) || accuracy > SPEED_THRESHOLDS.GPS_ACCURACY_THRESHOLD_M) {
           if (prevDriverPosRef.current && prevSampleTsRef.current) {
             const distM = calculateDistanceMeters(prevDriverPosRef.current, current);
-            const dt = Math.max(0.5, (sampleTs - prevSampleTsRef.current) / 1000);
-            const mps = distM > 5 && dt > 0.8 ? distM / dt : 0;
-            kmh = mps * 3.6;
+            const dt = Math.max(SPEED_THRESHOLDS.MIN_TIME_DELTA_S, (sampleTs - prevSampleTsRef.current) / 1000);
+            
+            if (distM >= SPEED_THRESHOLDS.MIN_DISTANCE_FOR_CALC_M && dt >= SPEED_THRESHOLDS.MIN_TIME_DELTA_S) {
+              const mps = distM / dt;
+              kmh = mps * 3.6;
+              
+              if (kmh > SPEED_THRESHOLDS.MAX_REASONABLE_SPEED_KMH) {
+                kmh = speedEmaRef.current * 3.6 || 0;
+              }
+            } else {
+              kmh = speedEmaRef.current * 3.6 || 0;
+            }
           } else {
             kmh = 0;
           }
         }
 
-        const alpha = 0.25;
-        const mpsRaw = Math.max(0, kmh / 3.6);
-        speedEmaRef.current = alpha * mpsRaw + (1 - alpha) * (speedEmaRef.current || 0);
+        const mpsRaw = Math.max(0, Math.min(kmh / 3.6, SPEED_THRESHOLDS.MAX_REASONABLE_SPEED_KMH / 3.6));
+        speedEmaRef.current = SPEED_THRESHOLDS.EMA_ALPHA * mpsRaw + (1 - SPEED_THRESHOLDS.EMA_ALPHA) * (speedEmaRef.current || 0);
         kmh = speedEmaRef.current * 3.6;
 
         if (posWindowRef.current.length >= 2) {
           const first = posWindowRef.current[0];
           const last = posWindowRef.current[posWindowRef.current.length - 1];
           const dM = calculateDistanceMeters(first, last);
-          if (dM < STATIONARY_DIST_M) kmh = 0;
+          const timeWindow = (last.ts - first.ts) / 1000;
+          
+          if (dM < STATIONARY_DIST_M && timeWindow >= 2) {
+            kmh = 0;
+          }
         }
 
-        if (kmh < 3) kmh = 0;
-        if (kmh === 0) stopHoldUntilRef.current = sampleTs + ZERO_HOLD_MS;
+        if (kmh < SPEED_THRESHOLDS.MIN_SPEED_THRESHOLD_KMH) kmh = 0;
+        if (kmh === 0) {
+          stopHoldUntilRef.current = sampleTs + ZERO_HOLD_MS;
+        }
         if (sampleTs < (stopHoldUntilRef.current || 0)) kmh = 0;
 
         setDriverSpeed(Math.round(kmh));
 
-        // ---- Update refs ----
         prevDriverPosRef.current = current;
         prevSampleTsRef.current = sampleTs;
       },
@@ -254,7 +263,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   }, [selectedDriver, driverPos]);
 
   useEffect(() => {
-    if (!isLoaded || !center) return;
+    if (!center) return;
     const dist = 0.05;
     const minLat = center.lat - dist;
     const maxLat = center.lat + dist;
@@ -282,7 +291,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         console.error("fetchCrosswalks failed:", err);
       }
     })();
-  }, [isLoaded, center]);
+  }, [center]);
 
   useEffect(() => {
     setDriverParcels([]);
@@ -325,7 +334,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
   }, [selectedDriver]);
 
   useEffect(() => {
-    if (!isLoaded || !driverPos || driverParcels.length === 0) {
+    if (!driverPos || driverParcels.length === 0) {
       setDirections(null);
       return;
     }
@@ -392,7 +401,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       console.error("buildDirections failed:", err);
       setDirections(null);
     }
-  }, [isLoaded, driverPos, driverParcels]);
+  }, [driverPos, driverParcels]);
 
   useEffect(() => {
     if (!mapRef?.current || !driverPos || !selectedDriver?.id) {
@@ -443,10 +452,6 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     if (!addingSlowdown || slowdownPin) return;
     setSlowdownPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });
   };
-
-  if (!isLoaded) {
-    return <div style={{ textAlign: "center", marginTop: "2rem" }}>Loading map...</div>;
-  }
 
   return (
     <Box sx={{ width: "100%", height: "100%", position: "relative" }}>

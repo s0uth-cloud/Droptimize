@@ -38,10 +38,9 @@ export default function FeatureCard({ title, description, icon }) {
         <Typography
           variant="h6"
           sx={{
-            fontFamily: "Lexend",
-            fontWeight: 600,
-            mb: 1,
+            fontWeight: 700,
             fontSize: responsiveFontSizes.h6,
+            mb: 1,
           }}
         >
           {title}
@@ -50,7 +49,6 @@ export default function FeatureCard({ title, description, icon }) {
         <Typography
           variant="body2"
           sx={{
-            fontFamily: "Lexend",
             color: "#333",
             fontSize: responsiveFontSizes.body2,
           }}

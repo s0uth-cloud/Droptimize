@@ -13,7 +13,7 @@ import {
   Paper,
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import { STATUS_COLORS } from "../../utils/constants";
+import { STATUS_COLORS } from "../../utils";
 
 export default function ParcelDetailsModal({ open, onClose, parcel }) {
   const formatDate = (date) => {
@@ -35,8 +35,7 @@ export default function ParcelDetailsModal({ open, onClose, parcel }) {
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle
         sx={{
-          fontFamily: "Lexend",
-          fontWeight: 600,
+          fontWeight: "bold",
           color: "#00b2e1",
         }}
       >
@@ -115,6 +114,18 @@ export default function ParcelDetailsModal({ open, onClose, parcel }) {
               </Typography>
             </Stack>
           </Paper>
+
+          {/* Message/Notes Section */}
+          {parcel.message && (
+            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: "#f9f9f9" }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                Message / Notes
+              </Typography>
+              <Typography variant="body2" sx={{ fontStyle: "italic", color: "text.secondary" }}>
+                {parcel.message}
+              </Typography>
+            </Paper>
+          )}
 
           {/* Driver Info */}
           {parcel.driverName && (

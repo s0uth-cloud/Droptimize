@@ -11,8 +11,8 @@ import {
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import DriverDetailsModal from "./DriverDetailsModal";
-import { normalizeDriver } from "../../services/dataNormalizers";
-import { STATUS_COLORS } from "../../utils/constants";
+import { normalizeDriver } from "../../services";
+import { STATUS_COLORS } from "../../utils";
 
 export default function DriverList({
   drivers = [],

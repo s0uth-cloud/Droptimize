@@ -1,3 +1,8 @@
+/**
+ * Consolidated Services
+ * All Firebase services and data normalizers in one file
+ */
+
 import {
   collection,
   getDocs,
@@ -12,9 +17,135 @@ import {
   increment,
   serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../firebaseConfig";
+import { db } from "./firebaseConfig";
 
+// ============================================================================
+// DATA NORMALIZERS
+// ============================================================================
 
+/**
+ * Normalize driver data to provide consistent shape across the UI
+ * @param {Object} raw - Raw driver data from Firestore
+ * @returns {Object} Normalized driver object
+ */
+export function normalizeDriver(raw = {}) {
+  const source = { ...raw };
+  const id = source.id || source.uid || source._id || null;
+
+  // name
+  const nameFromParts = `${source.firstName || ""} ${source.lastName || ""}`.trim();
+  const fullName =
+    source.fullName || source.displayName || nameFromParts || source.name || null;
+
+  // photo / avatar
+  const photoURL = source.photoURL || source.avatar || source.profilePhoto || source.image || "";
+
+  // normalize location into both `.loc` and `.location` shapes so existing code keeps working
+  let latitude = null;
+  let longitude = null;
+  let locSpeed = null;
+
+  if (source.loc && typeof source.loc.lat === "number" && typeof source.loc.lng === "number") {
+    latitude = source.loc.lat;
+    longitude = source.loc.lng;
+    locSpeed = source.loc.speed ?? source.loc.speedKmh ?? null;
+  } else if (
+    source.location &&
+    (typeof source.location.latitude === "number" || typeof source.location.lat === "number")
+  ) {
+    latitude = source.location.latitude ?? source.location.lat;
+    longitude = source.location.longitude ?? source.location.lng;
+    locSpeed = source.location.speedKmh ?? source.location.speed ?? null;
+  } else if (source.geo && typeof source.geo.lat === "number") {
+    latitude = source.geo.lat;
+    longitude = source.geo.lng;
+    locSpeed = source.geo.speed ?? null;
+  }
+
+  // Preserve extra fields like heading/ts when available on the original source.loc/location
+  const loc =
+    latitude != null && longitude != null
+      ? {
+          lat: latitude,
+          lng: longitude,
+          speed: locSpeed,
+          heading: source.loc?.heading ?? source.heading ?? null,
+          ts: source.loc?.ts ?? source.location?.ts ?? source.ts ?? null,
+        }
+      : source.loc || null;
+
+  const location = loc
+    ? { latitude: loc.lat, longitude: loc.lng, speedKmh: loc.speed, heading: loc.heading, ts: loc.ts }
+    : source.location || null;
+
+  // status normalized to lowercase string when present
+  const statusRaw = source.status ?? source.state ?? "";
+  const status = typeof statusRaw === "string" ? statusRaw.toLowerCase() : String(statusRaw).toLowerCase();
+
+  // speeds
+  const speed =
+    typeof loc?.speed === "number"
+      ? Math.round(loc.speed)
+      : typeof source.speed === "number"
+      ? Math.round(source.speed)
+      : typeof source.speedKmh === "number"
+      ? Math.round(source.speedKmh)
+      : null;
+
+  const avgSpeed = source.avgSpeed ?? null;
+  const topSpeed = source.topSpeed ?? null;
+
+  // parcels assigned count (some shapes use parcels, parcelsAssigned, parcelsLeft)
+  const parcelsCount =
+    Array.isArray(source.parcels) ? source.parcels.length : source.parcelsLeft ?? source.parcelsCount ?? null;
+
+  return {
+    // spread original properties first so we can override them
+    ...source,
+    // keep original reference for fallbacks
+    __raw: source,
+    // normalized fields that should override any original values
+    id,
+    uid: id,
+    fullName,
+    photoURL,
+    loc,
+    location,
+    status,
+    speed,
+    avgSpeed,
+    topSpeed,
+    parcelsCount,
+  };
+}
+
+/**
+ * Normalize parcel data to provide consistent shape across the UI
+ * @param {Object} raw - Raw parcel data from Firestore
+ * @returns {Object} Normalized parcel object
+ */
+export function normalizeParcel(raw = {}) {
+  const p = { ...raw };
+  const id = p.id || p.packageId || p.reference || null;
+  return {
+    __raw: p,
+    id,
+    reference: p.reference || p.packageId || id,
+    status: (p.status || "").toString(),
+    recipient: p.recipient || p.name || "",
+    ...p,
+  };
+}
+
+// ============================================================================
+// PARCEL SERVICES
+// ============================================================================
+
+/**
+ * Fetch all parcels, optionally filtered by user ID
+ * @param {string|null} uid - User ID to filter parcels
+ * @returns {Promise<Array>} Array of parcel objects
+ */
 export const fetchAllParcels = async (uid = null) => {
   try {
     const parcels = [];
@@ -30,8 +161,8 @@ export const fetchAllParcels = async (uid = null) => {
       if (uid && parcelData.uid !== uid) continue;
 
       parcels.push({
-        id: parcelId, 
-        weight:parcelData.weight,
+        id: parcelId,
+        weight: parcelData.weight,
         reference: parcelId || "",
         status: parcelData.status || "Pending",
         recipient: parcelData.recipient || "",
@@ -54,6 +185,11 @@ export const fetchAllParcels = async (uid = null) => {
   }
 };
 
+/**
+ * Fetch parcel status statistics
+ * @param {string|null} uid - User ID to filter parcels
+ * @returns {Promise<Object>} Object with status counts
+ */
 export const fetchParcelStatusData = async (uid = null) => {
   try {
     let delivered = 0;
@@ -103,7 +239,12 @@ export const fetchParcelStatusData = async (uid = null) => {
   }
 };
 
-// ======================== ADD PARCEL ========================
+/**
+ * Add a new parcel
+ * @param {Object} parcelData - Parcel data to add
+ * @param {string} uid - User ID
+ * @returns {Promise<Object>} Result object with success status
+ */
 export const addParcel = async (parcelData, uid) => {
   try {
     if (!uid) throw new Error("User ID (uid) is required to add a parcel");
@@ -119,7 +260,7 @@ export const addParcel = async (parcelData, uid) => {
       uid,
       weight: parcelData.weight,
       packageId: parcelId,
-      reference: parcelId|| "",
+      reference: parcelId || "",
       status: parcelData.status || "Pending",
       recipient: parcelData.recipient || "",
       recipientContact: parcelData.recipientContact || "",
@@ -148,7 +289,12 @@ export const addParcel = async (parcelData, uid) => {
   }
 };
 
-// ======================== UPDATE PARCEL ========================
+/**
+ * Update an existing parcel
+ * @param {Object} parcelData - Parcel data to update
+ * @param {string} parcelId - Parcel ID
+ * @returns {Promise<Object>} Result object with success status
+ */
 export const updateParcel = async (parcelData, parcelId) => {
   try {
     if (!parcelId) throw new Error("Parcel ID is required to update a parcel");
@@ -179,7 +325,11 @@ export const updateParcel = async (parcelData, parcelId) => {
   }
 };
 
-// ======================== DELETE PARCEL ========================
+/**
+ * Delete a parcel
+ * @param {string} parcelId - Parcel ID to delete
+ * @returns {Promise<Object>} Result object with success status
+ */
 export const deleteParcel = async (parcelId) => {
   try {
     if (!parcelId) throw new Error("Parcel ID is required to delete a parcel");
@@ -191,7 +341,12 @@ export const deleteParcel = async (parcelId) => {
   }
 };
 
-// ======================== ASSIGN PARCEL TO DRIVER ========================
+/**
+ * Assign a parcel to a driver
+ * @param {string} parcelId - Parcel ID
+ * @param {string} driverId - Driver ID
+ * @returns {Promise<boolean>} Success status
+ */
 export async function assignParcelToDriver(parcelId, driverId) {
   const parcelRef = doc(db, "parcels", parcelId);
   const driverRef = doc(db, "users", driverId);
@@ -210,7 +365,11 @@ export async function assignParcelToDriver(parcelId, driverId) {
   return true;
 }
 
-// ======================== GET PARCEL ========================
+/**
+ * Get a specific parcel by ID
+ * @param {string} parcelId - Parcel ID
+ * @returns {Promise<Object>} Result object with parcel data
+ */
 export const getParcel = async (parcelId) => {
   try {
     if (!parcelId) throw new Error("Parcel ID is required to get a parcel");
@@ -246,7 +405,14 @@ export const getParcel = async (parcelId) => {
   }
 };
 
-// ======================== DRIVER STATUS DATA ========================
+// ============================================================================
+// DRIVER SERVICES
+// ============================================================================
+
+/**
+ * Fetch driver status statistics
+ * @returns {Promise<Object>} Object with driver status counts
+ */
 export const fetchDriverStatusData = async () => {
   try {
     const branch = JSON.parse(localStorage.getItem("branch"));
@@ -291,13 +457,23 @@ export const fetchDriverStatusData = async () => {
   }
 };
 
+// ============================================================================
+// ANALYTICS SERVICES
+// ============================================================================
+
+/**
+ * Fetch delivery volume data for a given period
+ * @param {string} period - "daily" or "weekly"
+ * @param {string} uid - User ID
+ * @returns {Promise<Array>} Array of delivery volume data
+ */
 export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
   try {
     const parcelsRef = collection(db, "parcels");
     const q = query(
       parcelsRef,
       where("status", "in", ["Delivered", "Cancelled"]),
-      where("uid", "==", uid),
+      where("uid", "==", uid)
     );
 
     const parcelsSnapshot = await getDocs(q);
@@ -352,7 +528,11 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
   }
 };
 
-// ======================== OVERSPEEDING DATA ========================
+/**
+ * Fetch overspeeding incidents data for a given period
+ * @param {string} period - "daily" or "weekly"
+ * @returns {Promise<Array>} Array of overspeeding data
+ */
 export const fetchOverspeedingData = async (period = "daily") => {
   try {
     const branch = JSON.parse(localStorage.getItem("branch"));
@@ -362,10 +542,7 @@ export const fetchOverspeedingData = async (period = "daily") => {
     }
 
     const incidentsRef = collection(db, "users");
-    const q = query(
-      incidentsRef,
-      where("branchId", "==", branch.branchId)
-    );
+    const q = query(incidentsRef, where("branchId", "==", branch.branchId));
 
     const incidentsSnapshot = await getDocs(q);
     const violationData = {};
@@ -419,7 +596,11 @@ export const fetchOverspeedingData = async (period = "daily") => {
   }
 };
 
-// ======================== RECENT INCIDENTS ========================
+/**
+ * Fetch recent violation incidents
+ * @param {number} limitCount - Number of recent incidents to fetch
+ * @returns {Promise<Array>} Array of recent violations
+ */
 export const fetchRecentIncidents = async (limitCount = 5) => {
   try {
     const branch = JSON.parse(localStorage.getItem("branch"));
@@ -444,9 +625,9 @@ export const fetchRecentIncidents = async (limitCount = 5) => {
         violations.push({
           id: `${userDoc.id}_${violation.timestamp || Date.now()}`,
           date: violation.issuedAt
-            ? (violation.issuedAt.toDate
-                ? violation.issuedAt.toDate().toLocaleString()
-                : new Date(violation.issuedAt).toLocaleString())
+            ? violation.issuedAt.toDate
+              ? violation.issuedAt.toDate().toLocaleString()
+              : new Date(violation.issuedAt).toLocaleString()
             : "Unknown",
           location: violation.driverLocation
             ? `${violation.driverLocation.latitude}, ${violation.driverLocation.longitude}`
@@ -467,7 +648,15 @@ export const fetchRecentIncidents = async (limitCount = 5) => {
   }
 };
 
-// ======================== UTIL: WEEK NUMBER ========================
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Calculate week number of a date
+ * @param {Date} date - Date object
+ * @returns {number} Week number
+ */
 function getWeekNumber(date) {
   const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
   const pastDaysOfYear = (date - firstDayOfYear) / 86400000;

@@ -11,7 +11,7 @@ import {
   fetchDeliveryVolumeData,
   fetchOverspeedingData,
   fetchRecentIncidents,
-} from "../services/firebaseService.js";
+} from "../services.js";
 import { auth } from "../firebaseConfig.js";
 import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
 

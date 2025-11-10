@@ -17,10 +17,15 @@ import MapIcon from "@mui/icons-material/Map";
 import { arrayUnion, doc, Timestamp, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
-import { normalizeDriver } from "../../services/dataNormalizers";
-import { isInsideZone, calculateDistanceKm } from "../../utils/geoUtils";
-import { getDisplaySpeed } from "../../utils/speedUtils";
-import { STATUS_COLORS, CROSSWALK_RADIUS_KM, CROSSWALK_LIMIT_KMH } from "../../utils/constants";
+import { normalizeDriver } from "../../services";
+import {
+  isInsideZone,
+  calculateDistanceKm,
+  getDisplaySpeed,
+  STATUS_COLORS,
+  CROSSWALK_RADIUS_KM,
+  CROSSWALK_LIMIT_KMH,
+} from "../../utils";
 
 export default function DriverDetailsModal({ driver, open, onClose, onAssignParcel }) {
   const navigate = useNavigate();
@@ -158,7 +163,7 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
           variant="h6"
           fontWeight="bold"
           mb={3}
-          sx={{ color: "#00b2e1", fontFamily: "Lexend" }}
+          sx={{ color: "#00b2e1" }}
         >
           Driver Details
         </Typography>

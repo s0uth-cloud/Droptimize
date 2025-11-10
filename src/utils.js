@@ -1,11 +1,85 @@
 /**
- * Geospatial utility functions
- * Centralized location for distance calculations and coordinate conversions
+ * Consolidated Utility Functions
+ * All utility functions and constants in one file
  */
 
-// Constants
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+// Status colors
+export const STATUS_COLORS = {
+  available: "#29bf12",
+  delivering: "#ff9914",
+  offline: "#c4cad0",
+  delivered: "#29bf12",
+  failed: "#f21b3f",
+  returned: "#f21b3f",
+  "out for delivery": "#ff9914",
+  pending: "#c4cad0",
+};
+
+// Driver statuses
+export const DRIVER_STATUS = {
+  AVAILABLE: "Available",
+  DELIVERING: "Delivering",
+  OFFLINE: "Offline",
+};
+
+// Parcel statuses
+export const PARCEL_STATUS = {
+  PENDING: "pending",
+  OUT_FOR_DELIVERY: "out for delivery",
+  DELIVERED: "delivered",
+  FAILED: "failed",
+  RETURNED: "returned",
+};
+
+// Crosswalk detection
+export const CROSSWALK_RADIUS_KM = 0.015;
+export const CROSSWALK_LIMIT_KMH = 10;
+
+// Map colors for slowdown zones
+export const ZONE_COLORS = {
+  Church: "#9c27b0",
+  Crosswalk: "#2196F3",
+  School: "#ff9914",
+  Slowdown: "#29bf12",
+};
+
+// Speed and distance thresholds
+export const SPEED_THRESHOLDS = {
+  MOVING_THRESHOLD_M: 2,
+  STATIONARY_DIST_M: 5,
+  UPDATE_INTERVAL_MS: 1000,
+  STATIONARY_WINDOW_MS: 4000,
+  ZERO_HOLD_MS: 1500,
+  EMA_ALPHA: 0.3,
+  MIN_SPEED_THRESHOLD_KMH: 2,
+  MIN_DISTANCE_FOR_CALC_M: 3,
+  MIN_TIME_DELTA_S: 0.5,
+  MAX_REASONABLE_SPEED_KMH: 150,
+  GPS_ACCURACY_THRESHOLD_M: 30,
+};
+
+// Default time allowances
+export const TIME_ALLOWANCES = {
+  MINUTES_PER_PARCEL: 5,
+};
+
+// Default map center (Manila, Philippines)
+export const DEFAULT_MAP_CENTER = {
+  lat: 14.5995,
+  lng: 120.9842,
+};
+
+// Earth radius constants
 export const EARTH_RADIUS_KM = 6371;
 export const EARTH_RADIUS_M = 6371000;
+
+// ============================================================================
+// GEOSPATIAL UTILITIES
+// ============================================================================
 
 /**
  * Convert degrees to radians
@@ -139,4 +213,69 @@ export function isInsideZone(driver, zone) {
   );
   const radiusKm = (zone.radius || 15) / 1000;
   return distKm <= radiusKm;
+}
+
+// ============================================================================
+// SPEED UTILITIES
+// ============================================================================
+
+/**
+ * Get display speed from driver object (handles multiple data structures)
+ * @param {Object} driver - Driver object
+ * @returns {number|null} Speed in km/h or null
+ */
+export function getDisplaySpeed(driver) {
+  if (!driver) return null;
+
+  // Priority: loc.speed > location.speedKmh > speed > avgSpeed
+  if (typeof driver.loc?.speed === "number" && isFinite(driver.loc.speed)) {
+    return Math.round(driver.loc.speed);
+  }
+
+  if (typeof driver.location?.speedKmh === "number" && isFinite(driver.location.speedKmh)) {
+    return Math.round(driver.location.speedKmh);
+  }
+
+  if (typeof driver.speed === "number" && isFinite(driver.speed)) {
+    return Math.round(driver.speed);
+  }
+
+  if (typeof driver.avgSpeed === "number" && isFinite(driver.avgSpeed)) {
+    return Math.round(driver.avgSpeed);
+  }
+
+  return null;
+}
+
+/**
+ * Check if driver is overspeeding
+ * @param {number} currentSpeed - Current speed in km/h
+ * @param {number} speedLimit - Speed limit in km/h
+ * @returns {boolean} True if overspeeding
+ */
+export function isOverspeeding(currentSpeed, speedLimit) {
+  return (
+    typeof currentSpeed === "number" &&
+    speedLimit != null &&
+    speedLimit > 0 &&
+    currentSpeed > speedLimit
+  );
+}
+
+/**
+ * Convert meters per second to kilometers per hour
+ * @param {number} mps - Speed in meters per second
+ * @returns {number} Speed in kilometers per hour
+ */
+export function mpsToKmh(mps) {
+  return mps * 3.6;
+}
+
+/**
+ * Convert kilometers per hour to meters per second
+ * @param {number} kmh - Speed in kilometers per hour
+ * @returns {number} Speed in meters per second
+ */
+export function kmhToMps(kmh) {
+  return kmh / 3.6;
 }

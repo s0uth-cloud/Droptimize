@@ -173,7 +173,6 @@ export default function Profile() {
             variant="h6"
             sx={{
               alignSelf: "flex-start",
-              fontFamily: "Lexend",
               fontWeight: 600,
               color: "#333",
             }}
@@ -217,7 +216,6 @@ export default function Profile() {
             variant="h6"
             sx={{
               alignSelf: "flex-start",
-              fontFamily: "Lexend",
               fontWeight: 600,
               color: "#333",
             }}
@@ -266,7 +264,6 @@ export default function Profile() {
                   width: 150,
                   backgroundColor: "#00b2e1",
                   "&:hover": { backgroundColor: "#00a1d6" },
-                  fontFamily: "Lexend",
                   fontSize: "1rem",
                   fontWeight: 600,
                   borderRadius: "10px",
@@ -283,7 +280,6 @@ export default function Profile() {
                   width: 150,
                   backgroundColor: "#00b2e1",
                   "&:hover": { backgroundColor: "#00a1d6" },
-                  fontFamily: "Lexend",
                   fontSize: "1rem",
                   fontWeight: 600,
                   borderRadius: "10px",

@@ -16,7 +16,7 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import { serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { addParcel } from "../../services/firebaseService";
+import { addParcel } from "../../services";
 
 async function geocodeAddress({ street, barangay, municipalityName, provinceName, regionName }) {
   const parts = [street, barangay, municipalityName, provinceName, regionName]
@@ -101,7 +101,8 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
     municipalityName: "",
     barangay: "",
     barangayName: "",
-    weight: 0
+    weight: 0,
+    message: ""
   });
 
   const updateRow = (index, key, value, labelKey, labelValue) => {
@@ -206,6 +207,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
               province: row.provinceName,
               municipality: row.municipalityName,
               barangay: row.barangayName,
+              message: row.message || "",
               dateAdded: serverTimestamp(),
               destination: fallbackDestination,
             },
@@ -224,6 +226,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
               province: row.provinceName,
               municipality: row.municipalityName,
               barangay: row.barangayName,
+              message: row.message || "",
               dateAdded: serverTimestamp(),
               destination: destination,
             },
@@ -340,6 +343,18 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     onChange={(e) => updateRow(idx, "weight", e.target.value)}
                     size="small"
                     fullWidth
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Message / Notes (Optional)"
+                    value={row.message}
+                    onChange={(e) => updateRow(idx, "message", e.target.value)}
+                    size="small"
+                    fullWidth
+                    multiline
+                    rows={2}
+                    placeholder="Add any special instructions or notes for this parcel..."
                   />
                 </Grid>
               </Grid>

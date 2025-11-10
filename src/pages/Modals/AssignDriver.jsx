@@ -7,9 +7,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
-import { normalizeDriver } from "../../services/dataNormalizers";
-import { calculateDistanceKm } from "../../utils/geoUtils";
-import { TIME_ALLOWANCES } from "../../utils/constants";
+import { normalizeDriver } from "../../services";
+import { calculateDistanceKm, TIME_ALLOWANCES } from "../../utils";
 import {
   Dialog,
   DialogTitle,

@@ -9,6 +9,7 @@ import {
   Tooltip,
   Divider,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
@@ -21,9 +22,16 @@ import { doc, getDoc } from "firebase/firestore";
 
 import MapComponent from "/src/components/MapComponent.jsx";
 import DriverListPanel from "/src/components/DriverListPanel.jsx";
-import { Autocomplete as GmapAutocomplete } from "@react-google-maps/api";
+import { Autocomplete as GmapAutocomplete, useJsApiLoader } from "@react-google-maps/api";
+
+const libraries = ["places", "geometry"];
 
 export default function MapView() {
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: libraries,
+  });
+
   const [user, setUser] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
@@ -110,52 +118,108 @@ export default function MapView() {
     const ac = autocompleteRef.current;
     if (!ac) return;
     const place = ac.getPlace?.();
-    const loc = place?.geometry?.location;
-    if (loc) {
+    
+    if (!place || !place.geometry) {
+      console.warn("No geometry found for place");
+      return;
+    }
+    
+    const loc = place.geometry.location;
+    if (loc && mapRef.current) {
       const point = { lat: loc.lat(), lng: loc.lng() };
-      if (mapRef.current) {
-        mapRef.current.panTo(point);
-        mapRef.current.setZoom(17);
-      }
+      mapRef.current.panTo(point);
+      mapRef.current.setZoom(18);
+      
+      setSearchText(place.formatted_address || place.name || "");
     }
   };
 
   const geocodeSearch = (query) => {
     if (!query?.trim() || !window.google) return;
+    
     const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address: query }, (results, status) => {
+    geocoder.geocode({ 
+      address: query,
+      componentRestrictions: { country: "PH" },
+      region: "ph"
+    }, (results, status) => {
       if (status === "OK" && results?.[0] && mapRef.current) {
         const loc = results[0].geometry.location;
         const point = { lat: loc.lat(), lng: loc.lng() };
         mapRef.current.panTo(point);
-        mapRef.current.setZoom(17);
+        mapRef.current.setZoom(18);
+        
+        setSearchText(results[0].formatted_address);
       } else {
         console.warn("Geocode failed:", status);
+        alert("Location not found. Please try a different search.");
       }
     });
   };
 
-  return (
-    <Box
-      sx={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        p: 3,
-        boxSizing: "border-box",
-      }}
-    >
-      <Typography
-        variant="h4"
+  if (!isLoaded) {
+    return (
+      <Box
         sx={{
-          mb: 2,
-          fontFamily: "Lexend",
-          fontWeight: "bold",
-          color: "#00b2e1",
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
         }}
       >
-        Map View
-      </Typography>
+        <CircularProgress size={60} />
+        <Typography variant="h6" color="text.secondary">
+          Loading Map...
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      <style>
+        {`
+          .pac-container {
+            z-index: 1300 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-radius: 4px;
+            margin-top: 4px;
+          }
+          .pac-item {
+            cursor: pointer;
+            padding: 8px 12px;
+            font-size: 14px;
+          }
+          .pac-item:hover {
+            background-color: #f5f5f5;
+          }
+          .pac-icon {
+            margin-right: 8px;
+          }
+        `}
+      </style>
+      <Box
+        sx={{
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          p: 3,
+          boxSizing: "border-box",
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            mb: 2,
+            fontFamily: "Lexend",
+            fontWeight: "bold",
+            color: "#00b2e1",
+          }}
+        >
+          Map View
+        </Typography>
 
       <Paper
         elevation={3}
@@ -188,36 +252,54 @@ export default function MapView() {
             alignItems: "center",
             width: "100%",
           }}>
-            <GmapAutocomplete
-              onLoad={(ac) => (autocompleteRef.current = ac)}
-              onPlaceChanged={handlePlaceChanged}
-              options={{
-                fields: ["geometry", "name", "formatted_address"],
-                componentRestrictions: { country: ["ph"] },
-              }}
-            >
+            {isLoaded && window.google ? (
+              <GmapAutocomplete
+                onLoad={(ac) => (autocompleteRef.current = ac)}
+                onPlaceChanged={handlePlaceChanged}
+                options={{
+                  fields: ["geometry", "name", "formatted_address", "place_id", "address_components"],
+                  componentRestrictions: { country: "ph" },
+                }}
+              >
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Search place"
+                  placeholder="Search place or address in Philippines"
+                  defaultValue={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      geocodeSearch(e.target.value);
+                    }
+                  }}
+                  sx={{ 
+                    bgcolor: "white", 
+                    borderRadius: 1,
+                    '& .MuiInputBase-root': {
+                      fontSize: { xs: "0.875rem", md: "0.95rem", xl: "1rem" },
+                    },
+                    '& .MuiInputLabel-root': {
+                      fontSize: { xs: "0.875rem", md: "0.95rem", xl: "1rem" },
+                    },
+                  }}
+                  inputProps={{
+                    autoComplete: 'off',
+                    'aria-autocomplete': 'list',
+                  }}
+                />
+              </GmapAutocomplete>
+            ) : (
               <TextField
                 fullWidth
                 size="small"
                 label="Search place"
-                placeholder="Search place or address"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") geocodeSearch(searchText);
-                }}
-                sx={{ 
-                  bgcolor: "white", 
-                  borderRadius: 1,
-                  '& .MuiInputBase-root': {
-                    fontSize: { xs: "0.875rem", md: "0.95rem", xl: "1rem" },
-                  },
-                  '& .MuiInputLabel-root': {
-                    fontSize: { xs: "0.875rem", md: "0.95rem", xl: "1rem" },
-                  },
-                }}
+                placeholder="Loading search..."
+                disabled
+                sx={{ bgcolor: "white", borderRadius: 1 }}
               />
-            </GmapAutocomplete>
+            )}
 
             <Fab size="small" color="primary" onClick={() => geocodeSearch(searchText)}>
               <SearchIcon />
@@ -265,7 +347,7 @@ export default function MapView() {
             <Typography
               variant="h5"
               fontWeight="bold"
-              sx={{ color: "#00b2e1", ml: 1, fontFamily: "Lexend" }}
+              sx={{ color: "#00b2e1", ml: 1 }}
             >
               Drivers
             </Typography>
@@ -279,5 +361,6 @@ export default function MapView() {
         </Box>
       </Drawer>
     </Box>
+    </>
   );
 }

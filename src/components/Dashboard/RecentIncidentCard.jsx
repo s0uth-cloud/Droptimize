@@ -52,8 +52,8 @@ useEffect(() => {
 
   return (
     <Paper elevation={3} sx={{ p: 2, height: 350, width: 300, mx: "auto", overflowY: "auto" }}>
-      <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontFamily: "Lexend, sans-serif", fontWeight: "bold"}}>
-        Recent Incidents
+            <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold"}}>
+        Recent Overspeeding Incidents
       </Typography>
 
       {resolvedIncidents.length === 0 ? (

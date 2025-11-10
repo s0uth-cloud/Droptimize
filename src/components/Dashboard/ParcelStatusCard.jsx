@@ -12,7 +12,8 @@ export default function ParcelStatusCard({
     { id: "Delivered", value: delivered, color: "#29bf12" },
     { id: "Out for Delivery", value: outForDelivery, color: "#ff9914" },
     { id: "Pending", value: pending, color: "#c4cad0" },
-  ];
+    { id: "Failed/Returned", value: failedOrReturned, color: "#f21b3f" },
+  ].filter(item => item.value > 0);
 
   const total = delivered + pending + outForDelivery + failedOrReturned;
   const isEmpty = total === 0;
@@ -22,8 +23,8 @@ export default function ParcelStatusCard({
       elevation={3}
       sx={{
         p: responsiveSpacing.cardP,
-        height: { xs: 320, md: 340, lg: 350, xl: 350, xxl: 400 },
-        width: { xs: 280, md: 290, lg: 300, xl: 300, xxl: 350 },
+        height: { xs: 380, md: 400, lg: 420, xl: 420, xxl: 480 },
+        width: { xs: 300, md: 320, lg: 340, xl: 340, xxl: 400 },
         mx: "auto",
         display: "flex",
         flexDirection: "column",
@@ -31,8 +32,8 @@ export default function ParcelStatusCard({
       }}
     >
       {/* Title */}
-      <Typography variant="h6" align="center" gutterBottom sx={{color: "#00b2e1", fontFamily: "Lexend, sans-serif", fontWeight: "bold", fontSize: responsiveFontSizes.h6}}>
-        Parcel Status Breakdown
+            <Typography variant="h6" align="center" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold", fontSize: responsiveFontSizes.h6}}>
+        Parcel Status Overview
       </Typography>
 
       {/* No data fallback */}
@@ -62,16 +63,20 @@ export default function ParcelStatusCard({
             }}
           >
             <PieChart
-              series={[{ data: data.map(({ id, value }) => ({ id, value })) }]}
+              series={[
+                { 
+                  data: data.map(({ id, value }) => ({ id, value, label: id })),
+                  highlightScope: { faded: 'global', highlighted: 'item' },
+                  faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                }
+              ]}
               width={200}
               height={200}
               colors={data.map((d) => d.color)}
-              valueFormatter={(v) => `${((v / total) * 100).toFixed(0)}%`}
-              sx={{
-                '& .MuiChartsLegend-series text': {
-                  fontSize: `${responsiveFontSizes.caption} !important`,
-                },
+              slotProps={{
+                legend: { hidden: true }
               }}
+              margin={{ top: 10, bottom: 10, left: 10, right: 10 }}
             />
           </Box>
 
@@ -84,16 +89,17 @@ export default function ParcelStatusCard({
               overflow: "hidden",
             }}
           >
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: responsiveFontSizes.body2 }}>
-              Total Parcels: {total}
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: responsiveFontSizes.body2, fontWeight: 600 }}>
+              Total: {total}
             </Typography>
             <Divider sx={{ mb: 1 }} />
             <Box
               sx={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                justifyItems: "center",
-                rowGap: 0.5,
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.75,
+                alignItems: "flex-start",
+                px: 2,
               }}
             >
               {data.map(({ id, value, color }) => (
@@ -102,19 +108,41 @@ export default function ParcelStatusCard({
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 0.5,
+                    justifyContent: "space-between",
+                    width: "100%",
+                    gap: 1,
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: { xs: 8, md: 9, lg: 10, xxl: 12 },
-                      height: { xs: 8, md: 9, lg: 10, xxl: 12 },
-                      borderRadius: "50%",
-                      backgroundColor: color,
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flex: 1 }}>
+                    <Box
+                      sx={{
+                        width: { xs: 10, md: 11, lg: 12, xxl: 14 },
+                        height: { xs: 10, md: 11, lg: 12, xxl: 14 },
+                        borderRadius: "50%",
+                        backgroundColor: color,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <Typography 
+                      variant="body2" 
+                      color="textSecondary" 
+                      sx={{ 
+                        fontSize: responsiveFontSizes.caption,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {id}
+                    </Typography>
+                  </Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontSize: responsiveFontSizes.caption,
+                      fontWeight: "bold",
+                      color: color,
                     }}
-                  />
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: responsiveFontSizes.caption }}>
-                    {id}: {value}
+                  >
+                    {value} ({((value / total) * 100).toFixed(0)}%)
                   </Typography>
                 </Box>
               ))}
