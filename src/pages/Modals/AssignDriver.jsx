@@ -7,6 +7,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
+import { normalizeDriver } from "../../services/dataNormalizers";
 import {
   Dialog,
   DialogTitle,
@@ -46,6 +47,8 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   const [SpeedKmh, setSpeedKmh] = useState(45);
   const allowanceMinutesPerParcel = 5;
 
+  const d = normalizeDriver(driver);
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setUserLocation(null);
@@ -67,7 +70,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   }, [driver]);
 
   useEffect(() => {
-    if (!driver) return;
+    if (!d.id) return;
     const parcelsRef = collection(db, "parcels");
     const unsub = onSnapshot(parcelsRef, (snapshot) => {
       const allParcels = snapshot.docs.map((docSnap) => ({
@@ -97,14 +100,14 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       });
 
       const assignedToDriver = allParcels.filter(
-        (p) => p.status !== "Delivered" && p.driverUid === driver.id
+        (p) => p.status !== "Delivered" && p.driverUid === d.id
       );
 
       setParcels({ unassigned, assignedToDriver });
       setLoading(false);
     });
     return () => unsub();
-  }, [driver]);
+  }, [d.id, driver.preferredRoutes]);
 
   const computeTotalETA = (list) => {
     if (!userLocation || !list?.length) return "";
@@ -161,8 +164,8 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     }
     try {
       await updateDoc(doc(db, "parcels", parcel.id), {
-        driverUid: driver.id,
-        driverName: driver.fullName,
+        driverUid: d.id,
+        driverName: d.fullName || "Unknown Driver",
         assignedAt: serverTimestamp(),
         status: "Out for Delivery",
       });
@@ -174,7 +177,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   const handleSaveAverage = async (e) => {
     e.preventDefault();
     try {
-      await updateDoc(doc(db, "users", driver.id), {
+      await updateDoc(doc(db, "users", d.id), {
         speedAvg: Number(SpeedKmh) || 0,
       });
       alert("Speed Average has been saved successfully!");
@@ -298,7 +301,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Box>
             <Typography variant="h6">
-              Manage Parcels — {driver?.fullName || "Driver"}
+              Manage Parcels — {d.fullName || "Driver"}
             </Typography>
 
             <Stack direction="row" spacing={1} mt={1} alignItems="center" flexWrap="wrap">

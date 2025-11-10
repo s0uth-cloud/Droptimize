@@ -11,6 +11,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
+import { normalizeDriver } from "../services/dataNormalizers";
 import {
   Card,
   CardContent,
@@ -99,17 +100,17 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
 
   useEffect(() => {
     if (!branchId) return;
+    // Query all drivers for the branch and filter by status client-side.
+    // This avoids missing drivers due to inconsistent casing stored in Firestore.
     const qDrivers = query(
       collection(db, "users"),
       where("role", "==", "driver"),
-      where("branchId", "==", branchId),
-      where("status", "==", "Delivering")
+      where("branchId", "==", branchId)
     );
     const unsub = onSnapshot(qDrivers, (snapshot) => {
-      const driverList = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
+      const driverList = snapshot.docs
+        .map((d) => normalizeDriver({ id: d.id, ...d.data() }))
+        .filter((drv) => drv.status === "delivering");
       setDrivers(driverList);
     });
     return () => unsub();

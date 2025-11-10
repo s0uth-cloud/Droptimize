@@ -3,8 +3,6 @@ import {
   getDocs,
   query,
   where,
-  orderBy,
-  limit,
   doc,
   setDoc,
   Timestamp,
@@ -460,9 +458,9 @@ export const fetchRecentIncidents = async (limitCount = 5) => {
         });
       });
     });
-    return violations.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return violations
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, limitCount);
   } catch (error) {
     console.error("Error fetching recent violations:", error);
     return [];

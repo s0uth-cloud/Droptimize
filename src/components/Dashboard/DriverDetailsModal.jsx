@@ -17,6 +17,7 @@ import MapIcon from "@mui/icons-material/Map";
 import { arrayUnion, doc, Timestamp, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
+import { normalizeDriver } from "../../services/dataNormalizers";
 
 const statusColors = { available: "#29bf12", delivering: "#ff9914", offline: "#c4cad0" };
 const CROSSWALK_RADIUS_KM = 0.015;
@@ -41,10 +42,9 @@ function isInsideZone(loc, zone) {
 }
 
 function getDisplaySpeed(driver) {
-  const loc = driver?.location || {};
-  if (Number.isFinite(loc.speedKmh)) return Math.round(loc.speedKmh);
-  if (Number.isFinite(driver?.speed)) return Math.round(driver.speed);
-  if (Number.isFinite(driver?.avgSpeed)) return Math.round(driver.avgSpeed);
+  if (!driver) return null;
+  if (Number.isFinite(driver.speed)) return Math.round(driver.speed);
+  if (Number.isFinite(driver.avgSpeed)) return Math.round(driver.avgSpeed);
   return null;
 }
 
@@ -53,11 +53,10 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
   const [slowdowns, setSlowdowns] = useState([]);
   const [inCrosswalk, setInCrosswalk] = useState(false);
 
-  const d = driver ?? {};
-  const status = (d.status || "offline").toLowerCase();
-  const photo = d.avatar || d.photoURL || d.profilePhoto || d.image || "";
-  const displayName =
-    `${d.firstName || ""} ${d.lastName || ""}`.trim() || d.fullName || d.displayName || "Unnamed Driver";
+  const d = normalizeDriver(driver ?? {});
+  const status = d.status || "offline";
+  const photo = d.photoURL || "";
+  const displayName = d.fullName || d.displayName || "Unnamed Driver";
 
   useEffect(() => {
     if (!d.branchId) {
@@ -112,7 +111,7 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
     return () => {
       cancelled = true;
     };
-  }, [d.location?.latitude, d.location?.longitude]);
+  }, [d.location]);
 
   const applicableLimit = useMemo(() => {
     const candidates = [];

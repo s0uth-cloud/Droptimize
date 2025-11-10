@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import DriverDetailsModal from "./DriverDetailsModal";
+import { normalizeDriver } from "../../services/dataNormalizers";
 
 export default function DriverList({
   drivers = [],
@@ -34,14 +35,9 @@ export default function DriverList({
     else groupedDrivers.Offline.push(driver);
   });
 
-  const getDisplayName = (d) =>
-    `${d?.firstName || ""} ${d?.lastName || ""}`.trim() ||
-    d?.displayName ||
-    d?.fullName ||
-    "Unnamed Driver";
+  const getDisplayName = (d) => normalizeDriver(d).fullName || "Unnamed Driver";
 
-  const getAvatarSrc = (driver) =>
-    driver?.avatar || driver?.photoURL || driver?.profilePhoto || driver?.image || "";
+  const getAvatarSrc = (driver) => normalizeDriver(driver).photoURL || "";
 
   const handleCardClick = (driver) => {
     setSelectedDriver(driver);
@@ -53,9 +49,10 @@ export default function DriverList({
   };
 
   const renderDriverCard = (driver) => {
-    const displayStatus = (driver?.status || "offline").toLowerCase();
-    const avatarSrc = getAvatarSrc(driver);
-    const key = driver?.id || driver?.uid || Math.random();
+  const d = normalizeDriver(driver);
+  const displayStatus = d.status || "offline";
+  const avatarSrc = d.photoURL || getAvatarSrc(d);
+  const key = d.id || d.uid || Math.random();
 
     return (
       <Grid key={key}>
@@ -102,9 +99,9 @@ export default function DriverList({
                 variant="h6"
                 fontWeight="bold"
                 noWrap
-                title={getDisplayName(driver)}
+                title={getDisplayName(d)}
               >
-                {getDisplayName(driver)}
+                {getDisplayName(d)}
               </Typography>
 
               <Typography variant="body2" color="textSecondary" noWrap>

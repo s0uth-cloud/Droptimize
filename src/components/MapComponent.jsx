@@ -29,6 +29,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
+import { normalizeDriver } from "../services/dataNormalizers";
 
 const CATEGORY_COLORS = {
   Church: "#9c27b0",
@@ -156,7 +157,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     return () => {
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
     };
-  }, [isLoaded, selectedDriver?.id]);
+  }, [isLoaded, selectedDriver]);
 
   useEffect(() => {
     if (!branchId) return;
@@ -199,29 +200,10 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       userRef,
       (snap) => {
         if (!snap.exists()) return;
-        const d = snap.data();
-
-        // Normalize location structure
-        let loc = null;
-        if (d?.loc && typeof d.loc.lat === "number" && typeof d.loc.lng === "number") {
-          loc = {
-            lat: d.loc.lat,
-            lng: d.loc.lng,
-            heading: d.loc.heading,
-            speed: d.loc.speed,
-            ts: typeof d.loc.ts === "number" ? d.loc.ts : Date.now(),
-          };
-        } else if (d?.location?.latitude && d?.location?.longitude) {
-          loc = {
-            lat: d.location.latitude,
-            lng: d.location.longitude,
-            heading: d.heading,
-            speed: d.location.speedKmh ?? d.speed,
-            ts: d.location.ts ?? Date.now(),
-          };
-        }
-
-        if (!loc) return;
+        const raw = snap.data();
+        const dNorm = normalizeDriver({ id: snap.id, ...raw });
+        const loc = dNorm.loc || dNorm.location;
+        if (!loc || typeof loc.lat !== "number" || typeof loc.lng !== "number") return;
 
         const current = { lat: loc.lat, lng: loc.lng };
 
@@ -379,7 +361,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       setDriverParcels(docs);
     }, (err) => console.error("onSnapshot(parcels) error:", err));
     return () => unsub();
-  }, [selectedDriver?.id, selectedDriver?.uid]);
+  }, [selectedDriver]);
 
   useEffect(() => {
     if (!isLoaded || !driverPos || driverParcels.length === 0) {
@@ -481,7 +463,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
         console.error("map panTo failed:", err);
       }
     }
-  }, [driverPos, selectedDriver?.id]); // Removed mapRef from dependencies
+  }, [driverPos, selectedDriver?.id, mapRef]);
 
   const getDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371;

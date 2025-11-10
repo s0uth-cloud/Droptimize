@@ -146,6 +146,11 @@ export default function ResetPasswordForm() {
           >
             Set New Password
           </Typography>
+          {email && (
+            <Typography variant="body2" color="textSecondary">
+              Account: {email}
+            </Typography>
+          )}
 
           {error && (
             <Typography color="error" align="center" sx={{ fontSize: "0.9rem" }}>
