@@ -622,21 +622,31 @@ export const fetchRecentIncidents = async (limitCount = 5) => {
       const driverViolations = userData.violations || [];
 
       driverViolations.forEach((violation) => {
-        violations.push({
-          id: `${userDoc.id}_${violation.timestamp || Date.now()}`,
-          date: violation.issuedAt
-            ? violation.issuedAt.toDate
-              ? violation.issuedAt.toDate().toLocaleString()
-              : new Date(violation.issuedAt).toLocaleString()
-            : "Unknown",
-          location: violation.driverLocation
-            ? `${violation.driverLocation.latitude}, ${violation.driverLocation.longitude}`
-            : "Unknown location",
-          driverName: userData.fullName || "Unknown driver",
-          message: violation.message || "No message",
-          topSpeed: violation.topSpeed || 0,
-          avgSpeed: violation.avgSpeed || 0,
-        });
+        // Only include actual overspeeding violations
+        const topSpeed = violation.topSpeed || 0;
+        // Use zoneLimit if available, otherwise use defaultLimit, fallback to 40
+        const speedLimit = violation.zoneLimit || violation.defaultLimit || 40;
+        
+        // Only add if actually overspeeding (matching mobile app logic)
+        if (topSpeed > speedLimit) {
+          violations.push({
+            id: `${userDoc.id}_${violation.timestamp || Date.now()}`,
+            date: violation.issuedAt
+              ? violation.issuedAt.toDate
+                ? violation.issuedAt.toDate().toLocaleString()
+                : new Date(violation.issuedAt).toLocaleString()
+              : "Unknown",
+            location: violation.driverLocation
+              ? `${violation.driverLocation.latitude}, ${violation.driverLocation.longitude}`
+              : "Unknown location",
+            driverName: userData.fullName || "Unknown driver",
+            message: violation.message || "No message",
+            topSpeed: topSpeed,
+            avgSpeed: violation.avgSpeed || 0,
+            speedLimit: speedLimit,
+            zoneCategory: violation.zoneCategory || "Default",
+          });
+        }
       });
     });
     return violations

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   collection,
   onSnapshot,
@@ -34,6 +34,8 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   const [tab, setTab] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [speedKmh, setSpeedKmh] = useState(45);
+  const [etcText, setEtcText] = useState("");
+  const [calculatingETC, setCalculatingETC] = useState(false);
 
   const d = normalizeDriver(driver);
 
@@ -97,8 +99,9 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     return () => unsub();
   }, [d.id, driver]);
 
-  const computeTotalETA = (list) => {
-    if (!userLocation || !list?.length) return "";
+  const computeTotalETA = useCallback(async (list) => {
+    if (!userLocation || !list?.length || !window.google) return "";
+    
     const destinations = list
       .filter(
         (p) =>
@@ -107,43 +110,97 @@ export default function AssignDriverModal({ open, onClose, driver }) {
           p.destination.longitude != null
       )
       .map((p) => ({ lat: p.destination.latitude, lng: p.destination.longitude }));
+    
     if (!destinations.length) return "";
 
-    const speed = Number(speedKmh) || 1;
-    let fastRoute = [];
-    let visited = new Array(destinations.length).fill(false);
-    let current = { lat: userLocation.latitude, lng: userLocation.longitude };
+    try {
+      // Use Google Maps Directions API for accurate road-based ETA
+      const directionsService = new window.google.maps.DirectionsService();
+      
+      // Build optimized route with multiple waypoints
+      const origin = new window.google.maps.LatLng(userLocation.latitude, userLocation.longitude);
+      const waypoints = destinations.slice(0, -1).map(dest => ({
+        location: new window.google.maps.LatLng(dest.lat, dest.lng),
+        stopover: true
+      }));
+      const destination = new window.google.maps.LatLng(
+        destinations[destinations.length - 1].lat,
+        destinations[destinations.length - 1].lng
+      );
 
-    for (let i = 0; i < destinations.length; i++) {
-      let nearestIndex = -1;
-      let minDist = Infinity;
-      for (let j = 0; j < destinations.length; j++) {
-        if (visited[j]) continue;
-        const dist = calculateDistanceKm(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
-        if (dist < minDist) {
-          minDist = dist;
-          nearestIndex = j;
+      const result = await new Promise((resolve, reject) => {
+        directionsService.route(
+          {
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            optimizeWaypoints: true, // Let Google optimize the route
+            travelMode: window.google.maps.TravelMode.DRIVING,
+          },
+          (result, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK) {
+              resolve(result);
+            } else {
+              reject(status);
+            }
+          }
+        );
+      });
+
+      // Calculate total duration from all legs
+      let totalSeconds = 0;
+      result.routes[0].legs.forEach(leg => {
+        totalSeconds += leg.duration.value; // duration in seconds
+      });
+
+      // Add time allowance per parcel
+      const allowanceMinutes = TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
+      const totalMinutes = Math.round(totalSeconds / 60) + allowanceMinutes;
+      
+      const h = Math.floor(totalMinutes / 60);
+      const m = totalMinutes % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+      
+    } catch (error) {
+      console.error("Error calculating ETA with Google Maps:", error);
+      
+      // Fallback to straight-line distance calculation
+      const speed = Number(speedKmh) || 45;
+      let fastRoute = [];
+      let visited = new Array(destinations.length).fill(false);
+      let current = { lat: userLocation.latitude, lng: userLocation.longitude };
+
+      for (let i = 0; i < destinations.length; i++) {
+        let nearestIndex = -1;
+        let minDist = Infinity;
+        for (let j = 0; j < destinations.length; j++) {
+          if (visited[j]) continue;
+          const dist = calculateDistanceKm(current.lat, current.lng, destinations[j].lat, destinations[j].lng);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestIndex = j;
+          }
+        }
+        if (nearestIndex !== -1) {
+          visited[nearestIndex] = true;
+          fastRoute.push(destinations[nearestIndex]);
+          current = destinations[nearestIndex];
         }
       }
-      if (nearestIndex !== -1) {
-        visited[nearestIndex] = true;
-        fastRoute.push(destinations[nearestIndex]);
-        current = destinations[nearestIndex];
+
+      let fastDistance = 0;
+      let lastFast = { lat: userLocation.latitude, lng: userLocation.longitude };
+      for (const point of fastRoute) {
+        fastDistance += calculateDistanceKm(lastFast.lat, lastFast.lng, point.lat, point.lng);
+        lastFast = point;
       }
-    }
 
-    let fastDistance = 0;
-    let lastFast = { lat: userLocation.latitude, lng: userLocation.longitude };
-    for (const point of fastRoute) {
-      fastDistance += calculateDistanceKm(lastFast.lat, lastFast.lng, point.lat, point.lng);
-      lastFast = point;
+      const fastMinutes = Math.round((fastDistance / speed) * 60) + TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
+      const h = Math.floor(fastMinutes / 60);
+      const m = fastMinutes % 60;
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
-
-    const fastMinutes = Math.round((fastDistance / speed) * 60) + TIME_ALLOWANCES.MINUTES_PER_PARCEL * destinations.length;
-    const h = Math.floor(fastMinutes / 60);
-    const m = fastMinutes % 60;
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
+  }, [userLocation, speedKmh]);
 
   const handleAssign = async (parcel) => {
     if (!parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null) {
@@ -270,7 +327,21 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     (p) => p.destination && p.destination.latitude !== null && p.destination.longitude !== null
   ).length;
   const invalidAssignedCount = assignedCount - validAssignedCount;
-  const etcText = computeTotalETA(parcels.assignedToDriver);
+
+  // Calculate ETC whenever assigned parcels change
+  useEffect(() => {
+    const calculateETC = async () => {
+      if (parcels.assignedToDriver.length === 0) {
+        setEtcText("");
+        return;
+      }
+      setCalculatingETC(true);
+      const result = await computeTotalETA(parcels.assignedToDriver);
+      setEtcText(result);
+      setCalculatingETC(false);
+    };
+    calculateETC();
+  }, [parcels.assignedToDriver, computeTotalETA]);
 
   return (
     <Dialog
@@ -300,7 +371,11 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                   sx={{ bgcolor: "#f21b3f", color: "#fff" }}
                 />
               )}
-              {etcText && <Chip label={`ETC: ${etcText}`} />}
+              {calculatingETC ? (
+                <Chip label="Calculating ETC..." icon={<CircularProgress size={16} />} />
+              ) : (
+                etcText && <Chip label={`ETC: ${etcText}`} />
+              )}
             </Stack>
 
             <Stack direction="row" spacing={1} mt={2} alignItems="center">

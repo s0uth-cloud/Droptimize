@@ -51,8 +51,8 @@ useEffect(() => {
 
 
   return (
-    <Paper elevation={3} sx={{ p: 2, height: 350, width: 300, mx: "auto", overflowY: "auto" }}>
-            <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold"}}>
+    <Paper elevation={3} sx={{ p: 2, height: { xs: 380, md: 400, lg: 420, xl: 420, xxl: 480 }, minWidth: 450, maxWidth: 500, overflowY: "auto" }}>
+      <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold"}}>
         Recent Overspeeding Incidents
       </Typography>
 
@@ -66,13 +66,18 @@ useEffect(() => {
             <ListItem key={incident.id || index} divider={index < incidents.length - 1}>
               <ListItemText
                 primary={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                     <Typography variant="subtitle2">{incident.driverName}</Typography>
                     <Chip
                       size="small"
                       color="error"
                       label={`${incident.topSpeed} km/h`}
                       sx={{ height: 20 }}
+                    />
+                    <Chip
+                      size="small"
+                      label={`Limit: ${incident.speedLimit} km/h`}
+                      sx={{ height: 20, bgcolor: "#f0f0f0", color: "#666" }}
                     />
                   </Box>
                 }
