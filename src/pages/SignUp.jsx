@@ -80,14 +80,14 @@ export default function SignUpForm() {
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          p: { xs: 3, md: 4, xl: 4, xxl: 5 },
+          p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 },
           width: "100%",
           maxWidth: responsiveDimensions.formWidth,
           borderRadius: "1rem",
           boxShadow: 3
         }}
       >
-        <Stack spacing={{ xs: 1.5, md: 2, xxl: 2.5 }} alignItems="center">
+        <Stack spacing={{ xs: 2, md: 2.5, lg: 3, xxl: 3.5 }} alignItems="center">
           <Box
             component="img"
             src="/logo.svg"

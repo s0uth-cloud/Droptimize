@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "/src/firebaseConfig";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import SuccessMessage from "../components/SuccessMessage.jsx";
+import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function AccountSetup() {
   useEffect(() => {
@@ -112,9 +113,15 @@ export default function AccountSetup() {
   return (
     <>
       {submitted && <SuccessMessage open />}
-      <Box display="flex" justifyContent="center" mt={4}>
-        <Paper sx={{ p: 3, width: 400, borderRadius: "1rem", boxShadow: 3 }}>
-          <Stack spacing={4}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" sx={{ px: 2, py: 4 }}>
+        <Paper sx={{ 
+          p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 }, 
+          width: "100%",
+          maxWidth: responsiveDimensions.formWidth, 
+          borderRadius: "1rem", 
+          boxShadow: 3 
+        }}>
+          <Stack spacing={{ xs: 3, md: 3.5, lg: 4, xxl: 4.5 }}>
             <Typography
               variant="h4"
               align="center"
@@ -122,6 +129,7 @@ export default function AccountSetup() {
                 fontFamily: "LEMON MILK",
                 fontWeight: "bold",
                 color: "#00b2e1",
+                fontSize: responsiveFontSizes.h4,
               }}
             >
               Account Setup
@@ -130,7 +138,7 @@ export default function AccountSetup() {
             {/* Basic Info */}
             <Paper
               elevation={0}
-              sx={{ p: 3, borderRadius: 2, backgroundColor: "#f9f9f9" }}
+              sx={{ p: { xs: 2.5, md: 3, xxl: 3.5 }, borderRadius: 2, backgroundColor: "#f9f9f9" }}
             >
               <Box display="flex" alignItems="center" mb={2}>
                 <PersonIcon sx={{ color: "#00b2e1", mr: 1 }} />
@@ -140,13 +148,14 @@ export default function AccountSetup() {
                     fontFamily: "LEMON MILK",
                     fontWeight: "bold",
                     color: "#00b2e1",
+                    fontSize: responsiveFontSizes.h6,
                   }}
                 >
                   Basic Information
                 </Typography>
               </Box>
               <Divider sx={{ mb: 2 }} />
-              <Stack spacing={2}>
+              <Stack spacing={{ xs: 2, md: 2.5, xxl: 3 }}>
                 <TextField
                   label="Full Name"
                   value={formData.fullName}
@@ -201,7 +210,7 @@ export default function AccountSetup() {
             {/* Branch Info */}
             <Paper
               elevation={0}
-              sx={{ p: 3, borderRadius: 2, backgroundColor: "#f9f9f9" }}
+              sx={{ p: { xs: 2.5, md: 3, xxl: 3.5 }, borderRadius: 2, backgroundColor: "#f9f9f9" }}
             >
               <Box display="flex" alignItems="center" mb={2}>
                 <BusinessIcon sx={{ color: "#00b2e1", mr: 1 }} />
@@ -211,13 +220,14 @@ export default function AccountSetup() {
                     fontFamily: "LEMON MILK",
                     fontWeight: "bold",
                     color: "#00b2e1",
+                    fontSize: responsiveFontSizes.h6,
                   }}
                 >
                   Branch Information
                 </Typography>
               </Box>
               <Divider sx={{ mb: 2 }} />
-              <Stack spacing={2}>
+              <Stack spacing={{ xs: 2, md: 2.5, xxl: 3 }}>
                 <TextField
                   name="branchName"
                   label="Branch Name"

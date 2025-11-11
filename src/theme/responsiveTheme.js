@@ -74,11 +74,11 @@ export const responsiveFontSizes = {
   
   // Button text
   button: {
-    xs: "0.75rem",
-    md: "0.85rem",
-    lg: "0.85rem",
-    xl: "0.85rem",
-    xxl: "1rem",
+    xs: "0.875rem",
+    md: "0.95rem",
+    lg: "1rem",
+    xl: "1rem",
+    xxl: "1.125rem",
   },
   
   // Navigation text
@@ -204,36 +204,36 @@ export const responsiveDimensions = {
   
   // Button dimensions
   buttonHeight: {
-    xs: 40,
-    md: 45,
-    lg: 50,
-    xl: 50,
-    xxl: 55,
+    xs: 44,
+    md: 48,
+    lg: 52,
+    xl: 54,
+    xxl: 58,
   },
   
   buttonPx: {
-    xs: 2,
-    md: 2.5,
-    lg: 3,
-    xl: 3,
-    xxl: 4,
+    xs: 2.5,
+    md: 3,
+    lg: 3.5,
+    xl: 4,
+    xxl: 5,
   },
   
   buttonPy: {
-    xs: 1,
-    md: 1.1,
-    lg: 1.2,
-    xl: 1.2,
-    xxl: 1.5,
+    xs: 1.1,
+    md: 1.2,
+    lg: 1.3,
+    xl: 1.4,
+    xxl: 1.6,
   },
   
   // Form field dimensions
   formWidth: {
-    xs: 280,
-    md: 300,
-    lg: 320,
-    xl: 320,
-    xxl: 380,
+    xs: 360,
+    md: 420,
+    lg: 480,
+    xl: 520,
+    xxl: 600,
   },
   
   // QR Code dimensions

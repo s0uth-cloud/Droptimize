@@ -14,6 +14,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
 import { auth } from "/src/firebaseConfig";
+import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function ResetPasswordForm() {
   const [searchParams] = useSearchParams();
@@ -86,22 +87,39 @@ export default function ResetPasswordForm() {
   };
     if (!oobCode) {
     return (
-        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <Paper sx={{ p: 4, width: 320, borderRadius: "1rem", boxShadow: 3 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
+        <Paper sx={{ 
+          p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 }, 
+          width: "100%",
+          maxWidth: responsiveDimensions.formWidth, 
+          borderRadius: "1rem", 
+          boxShadow: 3 
+        }}>
             <Typography
             variant="h6"
             align="center"
-            sx={{ fontFamily: "LEMON MILK", fontWeight: "bold", color: "#f44336" }}
+            sx={{ 
+              fontFamily: "LEMON MILK", 
+              fontWeight: "bold", 
+              color: "#f44336",
+              fontSize: responsiveFontSizes.h6,
+            }}
             >
             Invalid Reset Link
             </Typography>
-            <Typography align="center" sx={{ mt: 2 }}>
+            <Typography align="center" sx={{ mt: 2, fontSize: responsiveFontSizes.body1 }}>
             The password reset link is missing or incorrect.
             </Typography>
             <Button
             fullWidth
             variant="contained"
-            sx={{ mt: 3, backgroundImage: "linear-gradient(#00b2e1, #0064b5)" }}
+            sx={{ 
+              mt: 3, 
+              backgroundImage: "linear-gradient(#00b2e1, #0064b5)",
+              height: responsiveDimensions.buttonHeight,
+              fontSize: responsiveFontSizes.button,
+              fontFamily: "LEMON MILK",
+            }}
             onClick={() => navigate("/login")}
             >
             Go to Login
@@ -113,16 +131,27 @@ export default function ResetPasswordForm() {
 
   if (success) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <Paper sx={{ p: 4, width: 320, borderRadius: "1rem", boxShadow: 3 }}>
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
+        <Paper sx={{ 
+          p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 }, 
+          width: "100%",
+          maxWidth: responsiveDimensions.formWidth, 
+          borderRadius: "1rem", 
+          boxShadow: 3 
+        }}>
           <Typography
             variant="h5"
             align="center"
-            sx={{ fontFamily: "LEMON MILK", fontWeight: "bold", color: "#00b2e1" }}
+            sx={{ 
+              fontFamily: "LEMON MILK", 
+              fontWeight: "bold", 
+              color: "#00b2e1",
+              fontSize: responsiveFontSizes.h5,
+            }}
           >
             Password Reset Successful
           </Typography>
-          <Typography align="center" sx={{ mt: 2 }}>
+          <Typography align="center" sx={{ mt: 2, fontSize: responsiveFontSizes.body1 }}>
             Your password has been updated. You can now{" "}
             <Link href="/login" underline="hover" sx={{ color: "#00b2e1", fontWeight: 600 }}>
               log in
@@ -135,25 +164,44 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-      <Paper component="form" onSubmit={handleSubmit} sx={{ p: 4, width: 320, borderRadius: "1rem", boxShadow: 3 }}>
-        <Stack spacing={2} alignItems="center">
-          <Box component="img" src="/logo.svg" alt="Droptimize Logo" sx={{ maxWidth: 300, mb: 2 }} />
+    <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
+      <Paper component="form" onSubmit={handleSubmit} sx={{ 
+        p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 }, 
+        width: "100%",
+        maxWidth: responsiveDimensions.formWidth, 
+        borderRadius: "1rem", 
+        boxShadow: 3 
+      }}>
+        <Stack spacing={{ xs: 2, md: 2.5, lg: 3, xxl: 3.5 }} alignItems="center">
+          <Box 
+            component="img" 
+            src="/logo.svg" 
+            alt="Droptimize Logo" 
+            sx={{ 
+              maxWidth: { xs: 250, md: 280, lg: 300, xl: 300, xxl: 350 }, 
+              mb: { xs: 1, md: 2 } 
+            }} 
+          />
           <Typography
             variant="h5"
             align="center"
-            sx={{ fontFamily: "LEMON MILK", fontWeight: "bold", color: "#00b2e1" }}
+            sx={{ 
+              fontFamily: "LEMON MILK", 
+              fontWeight: "bold", 
+              color: "#00b2e1",
+              fontSize: responsiveFontSizes.h5,
+            }}
           >
             Set New Password
           </Typography>
           {email && (
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant="body2" color="textSecondary" sx={{ fontSize: responsiveFontSizes.body2 }}>
               Account: {email}
             </Typography>
           )}
 
           {error && (
-            <Typography color="error" align="center" sx={{ fontSize: "0.9rem" }}>
+            <Typography color="error" align="center" sx={{ fontSize: responsiveFontSizes.body2 }}>
               {error}
             </Typography>
           )}
@@ -168,6 +216,14 @@ export default function ResetPasswordForm() {
             helperText={fieldErrors.newPassword}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -191,6 +247,14 @@ export default function ResetPasswordForm() {
             helperText={fieldErrors.confirmNewPassword}
             fullWidth
             size="small"
+            sx={{
+              '& .MuiInputBase-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+              '& .MuiInputLabel-root': {
+                fontSize: responsiveFontSizes.body1,
+              },
+            }}
             slotProps={{
               input: {
                 endAdornment: (
@@ -208,14 +272,15 @@ export default function ResetPasswordForm() {
             type="submit"
             variant="contained"
             disabled={loading}
+            fullWidth
             sx={{
-              height: 50,
+              height: responsiveDimensions.buttonHeight,
               borderRadius: "10px",
               backgroundImage: "linear-gradient(#00b2e1, #0064b5)",
               fontFamily: "LEMON MILK",
-              fontSize: loading ? "16px" : "18px",
-              padding: "1rem 2rem",
-              mt: 2,
+              fontSize: responsiveFontSizes.button,
+              padding: `${responsiveDimensions.buttonPy.xs}rem ${responsiveDimensions.buttonPx.xs}rem`,
+              mt: { xs: 1.5, md: 2 },
             }}
           >
             {loading ? "Resetting..." : "Reset Password"}
