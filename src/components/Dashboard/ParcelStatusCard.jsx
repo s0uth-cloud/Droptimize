@@ -23,8 +23,8 @@ export default function ParcelStatusCard({
       elevation={3}
       sx={{
         p: responsiveSpacing.cardP,
-        height: { xs: 380, md: 400, lg: 420, xl: 420, xxl: 480 },
-        width: { xs: 300, md: 320, lg: 340, xl: 340, xxl: 400 },
+        height: { xs: 280, md: 320, lg: 350, xl: 380, xxl: 420 },
+        width: { xs: 220, md: 240, lg: 260, xl: 280, xxl: 320 },
         mx: "auto",
         display: "flex",
         flexDirection: "column",
@@ -59,7 +59,7 @@ export default function ParcelStatusCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              minHeight: { xs: 160, md: 170, lg: 180, xl: 180, xxl: 200 },
+              minHeight: { xs: 120, md: 140, lg: 150, xl: 160, xxl: 180 },
             }}
           >
             <PieChart
@@ -70,8 +70,8 @@ export default function ParcelStatusCard({
                   faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
                 }
               ]}
-              width={200}
-              height={200}
+              width={150}
+              height={150}
               colors={data.map((d) => d.color)}
               slotProps={{
                 legend: { hidden: true }

@@ -485,8 +485,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
             <Button
               onClick={handleSaveAll}
               variant="contained"
-              color="success"
-              sx={{ borderRadius: 2 }}
+              sx={{ borderRadius: 2, backgroundColor: "#00b2e1" }}
               disabled={saving}
               startIcon={saving ? <CircularProgress size={18} color="inherit" /> : null}
             >
