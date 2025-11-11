@@ -15,13 +15,21 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { useJsApiLoader } from "@react-google-maps/api";
 import { auth, db } from "../firebaseConfig";
 import DriversHeader from "../components/Dashboard/DriversHeader.jsx";
 import DriverList from "../components/Dashboard/DriverList.jsx";
 import AssignDriverModal from "./Modals/AssignDriver.jsx";
 import DriverDetailsModal from "../components/Dashboard/DriverDetailsModal.jsx";
 
+const libraries = ["places", "geometry"];
+
 export default function Drivers() {
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: libraries,
+  });
+
   const [user, setUser] = useState(null);
   const [branchId, setBranchId] = useState(null);
   const [allDrivers, setAllDrivers] = useState([]);
@@ -141,6 +149,13 @@ export default function Drivers() {
       >
         Manage Drivers
       </Typography>
+
+      {!isLoaded && (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+          <CircularProgress size={24} />
+          <Typography sx={{ ml: 2 }}>Loading Google Maps...</Typography>
+        </Box>
+      )}
 
       <Stack spacing={3} sx={{ width: "100%" }}>
         {/* Filters */}

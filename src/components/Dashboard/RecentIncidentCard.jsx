@@ -51,54 +51,72 @@ useEffect(() => {
 
 
   return (
-    <Paper elevation={3} sx={{ p: 2, height: { xs: 380, md: 400, lg: 420, xl: 420, xxl: 480 }, minWidth: 450, maxWidth: 500, overflowY: "auto" }}>
-      <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold"}}>
+    <Paper
+      elevation={3}
+      sx={{
+        p: { xs: 1.5, md: 2 },
+        height: { xs: 280, md: 320, lg: 350, xl: 380, xxl: 420 },
+        minWidth: { xs: 300, md: 340, lg: 380, xl: 420, xxl: 460 },
+        maxWidth: { xs: 320, md: 380, lg: 420, xl: 460, xxl: 500 },
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Typography variant="h6" gutterBottom sx={{color: "#00b2e1", fontWeight: "bold", flexShrink: 0}}>
         Recent Overspeeding Incidents
       </Typography>
 
       {resolvedIncidents.length === 0 ? (
-        <Box sx={{ textAlign: "center", py: 2, color: "text.secondary" }}>
+        <Box sx={{ textAlign: "center", py: 2, color: "text.secondary", flexGrow: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Typography variant="body2">No recent incidents recorded</Typography>
         </Box>
       ) : (
-        <List>
-          {resolvedIncidents.map((incident, index) => (
-            <ListItem key={incident.id || index} divider={index < incidents.length - 1}>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                    <Typography variant="subtitle2">{incident.driverName}</Typography>
-                    <Chip
-                      size="small"
-                      color="error"
-                      label={`${incident.topSpeed} km/h`}
-                      sx={{ height: 20 }}
-                    />
-                    <Chip
-                      size="small"
-                      label={`Limit: ${incident.speedLimit} km/h`}
-                      sx={{ height: 20, bgcolor: "#f0f0f0", color: "#666" }}
-                    />
-                  </Box>
-                }
-                secondary={
-                  <>
-                    <Typography variant="body2" component="span">
-                      {incident.date}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      component="span"
-                      sx={{ display: "block" }}
-                    >
-                      {incident.address}
-                    </Typography>
-                  </>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
+        <Box sx={{ flexGrow: 1, overflow: "auto", minHeight: 0 }}>
+          <List sx={{ py: 0 }}>
+            {resolvedIncidents.map((incident, index) => (
+              <ListItem 
+                key={incident.id || index} 
+                divider={index < incidents.length - 1}
+                sx={{ px: 0, py: { xs: 1, md: 1.5 } }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap", mb: 0.5 }}>
+                      <Typography variant="subtitle2" sx={{ fontSize: { xs: "0.8rem", md: "0.875rem" } }}>
+                        {incident.driverName}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        color="error"
+                        label={`${incident.topSpeed} km/h`}
+                        sx={{ height: { xs: 18, md: 20 }, fontSize: { xs: "0.65rem", md: "0.75rem" } }}
+                      />
+                      <Chip
+                        size="small"
+                        label={`Limit: ${incident.speedLimit} km/h`}
+                        sx={{ height: { xs: 18, md: 20 }, bgcolor: "#f0f0f0", color: "#666", fontSize: { xs: "0.65rem", md: "0.75rem" } }}
+                      />
+                    </Box>
+                  }
+                  secondary={
+                    <>
+                      <Typography variant="body2" component="span" sx={{ fontSize: { xs: "0.7rem", md: "0.875rem" } }}>
+                        {incident.date}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ display: "block", fontSize: { xs: "0.7rem", md: "0.875rem" } }}
+                      >
+                        {incident.address}
+                      </Typography>
+                    </>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
       )}
     </Paper>
   );

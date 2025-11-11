@@ -76,19 +76,19 @@ export default function NavBar() {
       }}
     >
       {/* Logo Section */}
-      <Box sx={{ mb: responsiveSpacing.gapLarge, display: "flex", justifyContent: "center" }}>
+      <Box sx={{ mb: { xs: 1, md: 1.5, lg: responsiveSpacing.gapLarge }, display: "flex", justifyContent: "center" }}>
         <Box
           component="img"
           src="/logo.svg"
           alt="Droptimize Logo"
           sx={{
-            width: { xs: 120, md: 130, lg: 150, xl: 150, xxl: 180 },
+            width: { xs: 130, sm: 140, md: 150, lg: 160, xl: 170, xxl: 190 },
             height: "auto",
           }}
         />
       </Box>
 
-      <Divider sx={{ width: "80%", mb: responsiveSpacing.gapMedium, borderColor: "rgba(255,255,255,0.3)" }} />
+      <Divider sx={{ width: "80%", mb: { xs: 1, md: 1.5, lg: responsiveSpacing.gapMedium }, borderColor: "rgba(255,255,255,0.3)" }} />
 
       {/* Navigation List */}
       <List sx={{ width: "100%", flexGrow: 1 }}>
@@ -106,12 +106,12 @@ export default function NavBar() {
               "&:hover": {
                 backgroundColor: "#f0f0f0",
               },
-              pl: responsiveSpacing.gapLarge,
-              py: { xs: 1.2, md: 1.5, xxl: 2 },
+              pl: { xs: 1.5, md: responsiveSpacing.gapLarge },
+              py: { xs: 1.3, sm: 1.5, md: 1.8, xxl: 2.2 },
               transition: "background-color 0.2s ease-in-out",
             }}
           >
-            <ListItemIcon sx={{ color: "#00b2e1", minWidth: { xs: 35, md: 40, xxl: 50 } }}>
+            <ListItemIcon sx={{ color: "#00b2e1", minWidth: { xs: 38, sm: 42, md: 45, xxl: 55 } }}>
               {item.icon}
             </ListItemIcon>
             <ListItemText
@@ -119,24 +119,24 @@ export default function NavBar() {
               primaryTypographyProps={{
                 fontFamily: "Lexend, sans-serif",
                 fontWeight: 700,
-                fontSize: responsiveFontSizes.nav,
+                fontSize: { xs: "1.1rem", sm: "1.15rem", md: "1.2rem", lg: responsiveFontSizes.nav },
               }}
             />
           </ListItemButton>
         ))}
       </List>
 
-      <Divider sx={{ width: "80%", mb: responsiveSpacing.gapMedium, borderColor: "rgba(255,255,255,0.3)" }} />
+      <Divider sx={{ width: "80%", mb: { xs: 1, md: 1.5, lg: responsiveSpacing.gapMedium }, borderColor: "rgba(255,255,255,0.3)" }} />
 
       {/* QR Code Section */}
       {branchId && (
         <Box
           sx={{
             textAlign: "center",
-            mb: responsiveSpacing.gapMedium,
-            px: responsiveSpacing.gapMedium,
+            mb: { xs: 1.5, md: 2, lg: responsiveSpacing.gapMedium },
             backgroundColor: "#00b2e1",
-            py: responsiveSpacing.gapMedium,
+            py: { xs: 1.5, md: 2, lg: responsiveSpacing.gapMedium },
+            width: "100%",
           }}
         >
           <Typography
@@ -144,8 +144,8 @@ export default function NavBar() {
             sx={{
               fontFamily: "Lexend, sans-serif",
               fontWeight: 700,
-              fontSize: responsiveFontSizes.body2,
-              mb: 1,
+              fontSize: { xs: "0.85rem", sm: "0.9rem", md: responsiveFontSizes.body2 },
+              mb: { xs: 1, md: 1.5 },
               color: "#fff",
               letterSpacing: "0.05em",
             }}
@@ -160,9 +160,9 @@ export default function NavBar() {
               alignItems: "center",
               backgroundColor: "#fff",
               borderRadius: 2,
-              p: { xs: 1.2, md: 1.5, xxl: 2 },
-              width: responsiveDimensions.qrCodeContainer,
-              height: responsiveDimensions.qrCodeContainer,
+              p: { xs: 1.2, sm: 1.5, md: 2, xxl: 2.5 },
+              width: "65%",
+              aspectRatio: "1",
               mx: "auto",
             }}
           >
@@ -176,11 +176,11 @@ export default function NavBar() {
           <Typography
             variant="caption"
             sx={{
-              mt: 1,
+              mt: { xs: 1, md: 1.5 },
               color: "#fff",
               display: "block",
               fontFamily: "Lexend, sans-serif",
-              fontSize: responsiveFontSizes.caption,
+              fontSize: { xs: "0.75rem", sm: "0.8rem", md: responsiveFontSizes.caption },
             }}
           >
             {branch?.branchName || "Branch ID: " + branchId}

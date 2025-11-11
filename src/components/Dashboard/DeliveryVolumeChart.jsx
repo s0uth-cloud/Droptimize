@@ -13,7 +13,7 @@ export default function DeliveryVolumeChart({ dailyData = [], weeklyData = [] })
   const noData = !selectedData || selectedData.length === 0;
 
   return (
-    <Paper elevation={3} sx={{ p: 2, height: 350, minWidth: 700 }}>
+    <Paper elevation={3} sx={{ p: { xs: 1.5, md: 2 }, height: { xs: 280, md: 320, lg: 350, xl: 380, xxl: 420 }, minWidth: { xs: 300, md: 500, lg: 600, xl: 700, xxl: 800 } }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
         <Typography variant="h6" sx={{color: "#00b2e1", fontWeight: "bold"}}>Delivery Volume & Success Rate</Typography>
         <ToggleButtonGroup value={view} exclusive onChange={handleChange} size="small">
@@ -22,13 +22,13 @@ export default function DeliveryVolumeChart({ dailyData = [], weeklyData = [] })
         </ToggleButtonGroup>
       </Box>
       {noData ? (
-        <Box sx={{ height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Box sx={{ height: { xs: 210, md: 240, lg: 270, xl: 300, xxl: 340 }, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Typography variant="body2" color="text.secondary">
             No data available
           </Typography>
         </Box>
       ) : (
-        <Box sx={{ width: "100%", height: 280 }}>
+        <Box sx={{ width: "100%", height: { xs: 210, md: 240, lg: 270, xl: 300, xxl: 340 } }}>
           <LineChart
             xAxis={[
               {
@@ -61,7 +61,6 @@ export default function DeliveryVolumeChart({ dailyData = [], weeklyData = [] })
               { id: "left", label: "Deliveries", min: 0 },
               { id: "right", label: "Success Rate (%)", min: 0, max: 100 },
             ]}
-            height={280}
           />
         </Box>
       )}
