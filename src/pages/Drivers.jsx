@@ -19,7 +19,7 @@ import { useJsApiLoader } from "@react-google-maps/api";
 import { auth, db } from "../firebaseConfig";
 import DriversHeader from "../components/Dashboard/DriversHeader.jsx";
 import DriverList from "../components/Dashboard/DriverList.jsx";
-import AssignDriverModal from "./Modals/AssignDriver.jsx";
+import AssignDriverModal from "../components/Modals/AssignDriver.jsx";
 import DriverDetailsModal from "../components/Dashboard/DriverDetailsModal.jsx";
 
 const libraries = ["places", "geometry"];

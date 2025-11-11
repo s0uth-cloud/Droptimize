@@ -256,7 +256,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       return (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
           {type === "unassigned"
-            ? "No unassigned parcels match this driver’s route."
+            ? "No unassigned parcels match this driver's route."
             : "No parcels have been assigned to this driver yet."}
         </Typography>
       );
