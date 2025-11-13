@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { auth, db } from "/src/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
-import ProfilePhotoSelector from "../components/ProfilePhotoSelector.jsx";
+import ProfilePhotoSelector from "../components/Profile/ProfilePhotoSelector.jsx";
 
 export default function Profile() {
   useEffect(() => {

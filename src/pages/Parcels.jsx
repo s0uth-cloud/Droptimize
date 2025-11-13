@@ -7,8 +7,8 @@ import {
   Paper,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import ParcelsHeader from "../components/Dashboard/ParcelsHeader.jsx";
-import ParcelList from "../components/Dashboard/ParcelList.jsx";
+import ParcelsHeader from "../components/Parcels/ParcelsHeader.jsx";
+import ParcelList from "../components/Parcels/ParcelList.jsx";
 import ParcelEntryModal from "../components/Modals/ParcelEntryModal.jsx";
 import { fetchAllParcels } from "../services.js";
 import { auth } from "../firebaseConfig.js";

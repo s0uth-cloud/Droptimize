@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, Box, Typography } from "@mui/material";
-import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
+import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../../theme/responsiveTheme.js";
 
 export default function FeatureCard({ title, description, icon }) {
   return (

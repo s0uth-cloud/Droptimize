@@ -6,7 +6,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "/src/firebaseConfig";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
-import SuccessMessage from "../components/SuccessMessage.jsx";
+import SuccessMessage from "../components/AccountSetup/SuccessMessage.jsx";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function AccountSetup() {

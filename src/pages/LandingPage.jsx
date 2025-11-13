@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box, Typography, Button, Stack } from "@mui/material";
-import LandingPageHeader from "../components/LandingPageHeader.jsx";
-import FeatureCard from "../components/FeatureCard.jsx";
+import LandingPageHeader from "../components/LandingPage/LandingPageHeader.jsx";
+import FeatureCard from "../components/LandingPage/FeatureCard.jsx";
 import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function LandingPage() {

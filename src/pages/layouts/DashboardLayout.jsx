@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
-import NavBar from "/src/components/Dashboard/NavBar";
+import NavBar from "/src/components/shared/NavBar";
 
 /**
  * DashboardLayout provides the main structural layout of the admin dashboard.

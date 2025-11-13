@@ -18,7 +18,7 @@ Button,
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useState, useEffect } from "react";
-import ParcelDetailsModal from "/src/components/Dashboard/ParcelDetailsModal";
+import ParcelDetailsModal from "./ParcelDetailsModal";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
 import { STATUS_COLORS } from "../../utils";

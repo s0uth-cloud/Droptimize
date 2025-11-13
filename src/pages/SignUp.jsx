@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Box, Paper, Stack, Typography, TextField, Button, InputAdornment, IconButton, Link } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import SignUpSuccessMessage from "/src/components/SignUpSuccessMessage.jsx";
+import SignUpSuccessMessage from "/src/components/SignUp/SignUpSuccessMessage.jsx";
 import { registerUser } from "../firebaseConfig";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 

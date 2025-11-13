@@ -26,7 +26,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
-import { normalizeDriver } from "../services";
+import { normalizeDriver } from "../../services";
 import {
   calculateDistanceMeters,
   calculateBearing,
@@ -35,7 +35,7 @@ import {
   ZONE_COLORS,
   SPEED_THRESHOLDS,
   DEFAULT_MAP_CENTER,
-} from "../utils";
+} from "../../utils";
 
 const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
 const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
