@@ -201,6 +201,17 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
                   <strong>Contact:</strong> {d.phoneNumber || "N/A"}
                 </Typography>
                 <Typography variant="body2">
+                  <strong>Vehicle:</strong> {d.vehicleType || "N/A"}
+                  {d.model ? ` (${d.model})` : ""}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Plate Number:</strong> {d.plateNumber || "N/A"}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Weight Limit:</strong>{" "}
+                  {d.vehicleWeightLimit ? `${d.vehicleWeightLimit} kg` : "N/A"}
+                </Typography>
+                <Typography variant="body2">
                   <strong>Speed:</strong>{" "}
                   {Number.isFinite(displaySpeed) ? `${displaySpeed} km/h` : "N/A"}
                   {applicableLimit != null ? ` • Limit ${applicableLimit} km/h` : ""}

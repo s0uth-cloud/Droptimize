@@ -328,6 +328,11 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
                           : "N/A"}
                       </Typography>
                       <Typography variant="body2">Plate: {driver?.plateNumber || "N/A"}</Typography>
+                      {driver?.vehicleWeightLimit && (
+                        <Typography variant="body2">
+                          Weight Limit: {driver.vehicleWeightLimit} kg
+                        </Typography>
+                      )}
                     </Box>
                   </Grid>
 
