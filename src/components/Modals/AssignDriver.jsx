@@ -429,7 +429,10 @@ export default function AssignDriverModal({ open, onClose, driver }) {
               {vehicleWeightLimit > 0 && (
                 <Chip 
                   label={`Load: ${totalAssignedWeight}/${vehicleWeightLimit} kg`}
-                  color={totalAssignedWeight > vehicleWeightLimit ? "error" : remainingCapacity < vehicleWeightLimit * 0.2 ? "warning" : "success"}
+                  sx={{ 
+                    bgcolor: totalAssignedWeight > vehicleWeightLimit ? "#f21b3f" : remainingCapacity < vehicleWeightLimit * 0.2 ? "#ff9914" : "#29bf12",
+                    color: "#fff"
+                  }}
                 />
               )}
               {calculatingETC ? (
