@@ -319,7 +319,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                       size="small" 
                       sx={{ 
                         bgcolor: "#e3f2fd", 
-                        color: "#1976d2",
+                        color: "#0064b5",
                         fontSize: "0.7rem",
                         height: 20
                       }} 
