@@ -17,10 +17,10 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { useJsApiLoader } from "@react-google-maps/api";
 import { auth, db } from "../firebaseConfig";
-import DriversHeader from "../components/Dashboard/DriversHeader.jsx";
-import DriverList from "../components/Dashboard/DriverList.jsx";
+import DriversHeader from "../components/Drivers/DriversHeader.jsx";
+import DriverList from "../components/Drivers/DriverList.jsx";
 import AssignDriverModal from "../components/Modals/AssignDriver.jsx";
-import DriverDetailsModal from "../components/Dashboard/DriverDetailsModal.jsx";
+import DriverDetailsModal from "../components/Drivers/DriverDetailsModal.jsx";
 
 const libraries = ["places", "geometry"];
 

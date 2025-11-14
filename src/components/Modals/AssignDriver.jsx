@@ -39,6 +39,18 @@ export default function AssignDriverModal({ open, onClose, driver }) {
 
   const d = normalizeDriver(driver);
 
+  // Get driver's vehicle weight limit
+  const vehicleWeightLimit = driver?.vehicleWeightLimit || 0;
+  
+  // Calculate total weight of assigned parcels
+  const totalAssignedWeight = parcels.assignedToDriver.reduce(
+    (sum, parcel) => sum + (Number(parcel.weight) || 0),
+    0
+  );
+  
+  // Calculate remaining capacity
+  const remainingCapacity = vehicleWeightLimit - totalAssignedWeight;
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setUserLocation(null);
@@ -207,6 +219,23 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       alert("⚠️ Cannot assign parcel: Invalid destination. Please update the parcel location.");
       return;
     }
+    
+    // Check weight limit
+    const parcelWeight = Number(parcel.weight) || 0;
+    const newTotalWeight = totalAssignedWeight + parcelWeight;
+    
+    if (vehicleWeightLimit > 0 && newTotalWeight > vehicleWeightLimit) {
+      const overweight = newTotalWeight - vehicleWeightLimit;
+      alert(
+        `⚠️ Cannot assign parcel: Weight limit exceeded!\n\n` +
+        `Parcel weight: ${parcelWeight} kg\n` +
+        `Current load: ${totalAssignedWeight} kg\n` +
+        `Vehicle capacity: ${vehicleWeightLimit} kg\n` +
+        `This would exceed the limit by ${overweight.toFixed(1)} kg.`
+      );
+      return;
+    }
+    
     try {
       await updateDoc(doc(db, "parcels", parcel.id), {
         driverUid: d.id,
@@ -265,6 +294,8 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       <List dense disablePadding>
         {list.map((parcel) => {
           const isInvalid = !parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null;
+          const parcelWeight = Number(parcel.weight) || 0;
+          const wouldExceedLimit = type === "unassigned" && vehicleWeightLimit > 0 && (totalAssignedWeight + parcelWeight) > vehicleWeightLimit;
           
           return (
             <ListItem
@@ -276,18 +307,42 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                 px: 2,
                 py: 1.5,
                 borderBottom: "1px solid #eee",
-                bgcolor: isInvalid ? "#fff4f4" : "transparent",
+                bgcolor: isInvalid ? "#fff4f4" : wouldExceedLimit ? "#fff9e6" : "transparent",
               }}
             >
               <Box sx={{ flex: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                   <Typography fontWeight={500}>{parcel.reference}</Typography>
+                  {parcelWeight > 0 && (
+                    <Chip 
+                      label={`${parcelWeight} kg`} 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: "#e3f2fd", 
+                        color: "#1976d2",
+                        fontSize: "0.7rem",
+                        height: 20
+                      }} 
+                    />
+                  )}
                   {isInvalid && (
                     <Chip 
                       label="Invalid" 
                       size="small" 
                       sx={{ 
                         bgcolor: "#f21b3f", 
+                        color: "#fff",
+                        fontSize: "0.7rem",
+                        height: 20
+                      }} 
+                    />
+                  )}
+                  {wouldExceedLimit && (
+                    <Chip 
+                      label="Exceeds Limit" 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: "#ff9914", 
                         color: "#fff",
                         fontSize: "0.7rem",
                         height: 20
@@ -308,7 +363,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                 variant={type === "unassigned" ? "contained" : "outlined"}
                 color={type === "unassigned" ? "primary" : "error"}
                 size="small"
-                disabled={isInvalid && type === "unassigned"}
+                disabled={(isInvalid && type === "unassigned") || wouldExceedLimit}
                 onClick={() =>
                   type === "unassigned" ? handleAssign(parcel) : handleUnassign(parcel)
                 }
@@ -369,6 +424,12 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                 <Chip 
                   label={`Invalid: ${invalidAssignedCount}`} 
                   sx={{ bgcolor: "#f21b3f", color: "#fff" }}
+                />
+              )}
+              {vehicleWeightLimit > 0 && (
+                <Chip 
+                  label={`Load: ${totalAssignedWeight}/${vehicleWeightLimit} kg`}
+                  color={totalAssignedWeight > vehicleWeightLimit ? "error" : remainingCapacity < vehicleWeightLimit * 0.2 ? "warning" : "success"}
                 />
               )}
               {calculatingETC ? (

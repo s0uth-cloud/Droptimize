@@ -1,6 +1,6 @@
 import { Box, TextField, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { useState } from "react";
-import SummaryCard from "./SummaryCard.jsx";
+import SummaryCard from "../shared/SummaryCard.jsx";
 
 export default function ParcelsHeader({
   showSearch = false,

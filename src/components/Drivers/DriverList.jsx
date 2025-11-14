@@ -103,6 +103,13 @@ export default function DriverList({
                 ID: {driver?.id || driver?.uid || "N/A"}
               </Typography>
 
+              {driver?.vehicleType && (
+                <Typography variant="body2" color="textSecondary" noWrap>
+                  Vehicle: {driver.vehicleType}
+                  {driver?.vehicleWeightLimit ? ` (${driver.vehicleWeightLimit} kg)` : ""}
+                </Typography>
+              )}
+
               {driver?.phoneNumber && (
                 <Typography variant="body2" color="textSecondary" noWrap>
                   Contact: {driver.phoneNumber}

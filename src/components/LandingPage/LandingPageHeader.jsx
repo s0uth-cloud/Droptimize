@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { AppBar, Toolbar, Box, Button, Typography, Stack, Slide } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../theme/responsiveTheme.js";
+import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../../theme/responsiveTheme.js";
 
 export default function LandingPageHeader() {
   const [visible, setVisible] = useState(true);

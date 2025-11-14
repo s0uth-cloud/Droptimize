@@ -11,7 +11,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db } from "/src/firebaseConfig";
-import { normalizeDriver } from "../services";
+import { normalizeDriver } from "../../services";
 import {
   calculateDistanceKm,
   getDriverLocation,
@@ -21,7 +21,7 @@ import {
   CROSSWALK_LIMIT_KMH,
   STATUS_COLORS,
   DRIVER_STATUS,
-} from "../utils";
+} from "../../utils";
 import {
   Card,
   CardContent,
@@ -328,6 +328,11 @@ export default function DriverListPanel({ user, mapRef, onDriverSelect, selected
                           : "N/A"}
                       </Typography>
                       <Typography variant="body2">Plate: {driver?.plateNumber || "N/A"}</Typography>
+                      {driver?.vehicleWeightLimit && (
+                        <Typography variant="body2">
+                          Weight Limit: {driver.vehicleWeightLimit} kg
+                        </Typography>
+                      )}
                     </Box>
                   </Grid>
 

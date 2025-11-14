@@ -1,6 +1,6 @@
 import { Box, TextField } from "@mui/material";
 import { useState } from "react";
-import SummaryCard from "./SummaryCard.jsx";
+import SummaryCard from "../shared/SummaryCard.jsx";
 
 export default function DriversHeader({
   showSearch = false,

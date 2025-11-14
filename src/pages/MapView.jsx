@@ -20,8 +20,8 @@ import { auth, db } from "/src/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
-import MapComponent from "/src/components/MapComponent.jsx";
-import DriverListPanel from "/src/components/DriverListPanel.jsx";
+import MapComponent from "/src/components/MapView/MapComponent.jsx";
+import DriverListPanel from "/src/components/MapView/DriverListPanel.jsx";
 import { Autocomplete as GmapAutocomplete, useJsApiLoader } from "@react-google-maps/api";
 
 const libraries = ["places", "geometry"];
