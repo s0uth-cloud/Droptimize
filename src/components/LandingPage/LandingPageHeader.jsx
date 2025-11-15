@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { AppBar, Toolbar, Box, Button, Typography, Stack, Slide } from "@mui/material";
+import { AppBar, Toolbar, Box, Button, Typography, Stack, Slide, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../../theme/responsiveTheme.js";
 
@@ -8,6 +8,8 @@ export default function LandingPageHeader() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const scrollTimeoutRef = useRef(null);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Scroll hide/show
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function LandingPageHeader() {
           px: { xs: 2, sm: 3, md: 4, xl: 5, xxl: 6 },
         }}
       >
-        <Toolbar disableGutters sx={{ justifyContent: "space-between", minHeight: { xs: 56, md: 64, xl: 70, xxl: 80 } }}>
+        <Toolbar disableGutters sx={{ justifyContent: { xs: "center", md: "space-between" }, minHeight: { xs: 56, md: 64, xl: 70, xxl: 80 } }}>
           {/* Logo */}
           <Box
             sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}
@@ -76,41 +78,43 @@ export default function LandingPageHeader() {
             ))}
           </Stack>
 
-          {/* Static Auth Buttons */}
-          <Stack direction="row" spacing={responsiveSpacing.gapSmall} alignItems="center">
-            <Button
-              variant="contained"
-              onClick={() => navigate("/login")}
-              sx={{
-                backgroundColor: "#00b2e1",
-                fontWeight: 600,
-                fontFamily: "Lexend, sans-serif",
-                textTransform: "none",
-                fontSize: responsiveFontSizes.button,
-                px: responsiveDimensions.buttonPx,
-                py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
-                "&:hover": { backgroundColor: "#0064b5" },
-              }}
-            >
-              Login
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => navigate("/signup")}
-              sx={{
-                backgroundColor: "#00b2e1",
-                fontWeight: 600,
-                fontFamily: "Lexend, sans-serif",
-                textTransform: "none",
-                fontSize: responsiveFontSizes.button,
-                px: responsiveDimensions.buttonPx,
-                py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
-                "&:hover": { backgroundColor: "#0064b5" },
-              }}
-            >
-              Sign Up
-            </Button>
-          </Stack>
+          {/* Static Auth Buttons - Hidden on Mobile */}
+          {!isMobile && (
+            <Stack direction="row" spacing={responsiveSpacing.gapSmall} alignItems="center">
+              <Button
+                variant="contained"
+                onClick={() => navigate("/login")}
+                sx={{
+                  backgroundColor: "#00b2e1",
+                  fontWeight: 600,
+                  fontFamily: "Lexend, sans-serif",
+                  textTransform: "none",
+                  fontSize: responsiveFontSizes.button,
+                  px: responsiveDimensions.buttonPx,
+                  py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
+                  "&:hover": { backgroundColor: "#0064b5" },
+                }}
+              >
+                Login
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => navigate("/signup")}
+                sx={{
+                  backgroundColor: "#00b2e1",
+                  fontWeight: 600,
+                  fontFamily: "Lexend, sans-serif",
+                  textTransform: "none",
+                  fontSize: responsiveFontSizes.button,
+                  px: responsiveDimensions.buttonPx,
+                  py: { xs: 0.8, md: 1, xl: 1.2, xxl: 1.5 },
+                  "&:hover": { backgroundColor: "#0064b5" },
+                }}
+              >
+                Sign Up
+              </Button>
+            </Stack>
+          )}
         </Toolbar>
       </AppBar>
     </Slide>
