@@ -125,7 +125,7 @@ export default function LandingPage() {
 
             {activeGroup === "admin" && (
               <>
-                <Box sx={{ width: "100%", mb: 2, textAlign: { xs: "center", md: "left" } }}>
+                <Box sx={{ width: "100%", mb: 2, textAlign: "center" }}>
                   <Button
                     variant="outlined"
                     onClick={goBack}
@@ -162,7 +162,7 @@ export default function LandingPage() {
 
             {activeGroup === "courier" && (
               <>
-                <Box sx={{ width: "100%", mb: 2, textAlign: { xs: "center", md: "left" } }}>
+                <Box sx={{ width: "100%", mb: 2, textAlign: "center" }}>
                   <Button
                     variant="outlined"
                     onClick={goBack}
