@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Stack, Typography, TextField, Select, MenuItem, Box, Divider, InputAdornment, Paper, Button } from "@mui/material";
+import { Stack, Typography, TextField, Select, MenuItem, Box, Divider, InputAdornment, Paper, Button, FormControl, InputLabel, FormHelperText } from "@mui/material";
 import { TimePicker } from "@mui/x-date-pickers";
 import PersonIcon from "@mui/icons-material/Person";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -8,6 +8,7 @@ import { auth, db } from "/src/firebaseConfig";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import SuccessMessage from "../components/AccountSetup/SuccessMessage.jsx";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
+import axios from "axios";
 
 export default function AccountSetup() {
   useEffect(() => {
@@ -24,7 +25,9 @@ export default function AccountSetup() {
     countryCode: "+63",
     branchName: "",
     branchAddress: "",
-    operatingArea: "",
+    operatingRegion: "",
+    operatingProvince: "",
+    operatingCity: "",
     openingTime: null,
     closingTime: null,
   });
@@ -33,6 +36,11 @@ export default function AccountSetup() {
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // PSGC API data
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
 
   // Fetch Firebase user info on mount
   useEffect(() => {
@@ -54,6 +62,50 @@ export default function AccountSetup() {
     fetchUser();
   }, []);
 
+  // Fetch regions on mount
+  useEffect(() => {
+    axios.get("https://psgc.gitlab.io/api/regions/")
+      .then((res) => setRegions(res.data))
+      .catch((err) => console.error("Failed to fetch regions:", err));
+  }, []);
+
+  // Fetch provinces when region changes
+  useEffect(() => {
+    if (formData.operatingRegion) {
+      axios.get(`https://psgc.gitlab.io/api/regions/${formData.operatingRegion}/provinces/`)
+        .then((res) => setProvinces(res.data))
+        .catch((err) => console.error("Failed to fetch provinces:", err));
+      
+      // Reset dependent fields
+      setFormData((prev) => ({
+        ...prev,
+        operatingProvince: "",
+        operatingCity: "",
+      }));
+      setCities([]);
+    } else {
+      setProvinces([]);
+      setCities([]);
+    }
+  }, [formData.operatingRegion]);
+
+  // Fetch cities when province changes
+  useEffect(() => {
+    if (formData.operatingProvince) {
+      axios.get(`https://psgc.gitlab.io/api/provinces/${formData.operatingProvince}/cities-municipalities/`)
+        .then((res) => setCities(res.data))
+        .catch((err) => console.error("Failed to fetch cities:", err));
+      
+      // Reset city field
+      setFormData((prev) => ({
+        ...prev,
+        operatingCity: "",
+      }));
+    } else {
+      setCities([]);
+    }
+  }, [formData.operatingProvince]);
+
   // Validate form
   useEffect(() => {
     const newErrors = {};
@@ -65,7 +117,9 @@ export default function AccountSetup() {
 
     if (!formData.branchName?.trim()) newErrors.branchName = "Branch name is required";
     if (!formData.branchAddress?.trim()) newErrors.branchAddress = "Branch address is required";
-    if (!formData.operatingArea?.trim()) newErrors.operatingArea = "Operating area is required";
+    if (!formData.operatingRegion) newErrors.operatingRegion = "Region is required";
+    if (!formData.operatingProvince) newErrors.operatingProvince = "Province is required";
+    if (!formData.operatingCity) newErrors.operatingCity = "City/Municipality is required";
     if (!formData.openingTime || !formData.closingTime) {
       newErrors.operatingHours = "Both opening and closing times are required";
     }
@@ -83,11 +137,28 @@ export default function AccountSetup() {
     if (!isValid || !userId) return;
     console.log("valid")
     try {
+      // Find the names for the selected codes
+      const regionObj = regions.find((r) => r.code === formData.operatingRegion);
+      const provinceObj = provinces.find((p) => p.code === formData.operatingProvince);
+      const cityObj = cities.find((c) => c.code === formData.operatingCity);
+
+      const operatingArea = [
+        cityObj?.name,
+        provinceObj?.name,
+        regionObj?.name
+      ].filter(Boolean).join(", ");
+
       const branchRef = await addDoc(collection(db, "branches"), {
         adminId: userId,
         branchName: formData.branchName,
         branchAddress: formData.branchAddress,
-        operatingArea: formData.operatingArea,
+        operatingArea: operatingArea,
+        operatingRegionCode: formData.operatingRegion,
+        operatingRegionName: regionObj?.name || "",
+        operatingProvinceCode: formData.operatingProvince,
+        operatingProvinceName: provinceObj?.name || "",
+        operatingCityCode: formData.operatingCity,
+        operatingCityName: cityObj?.name || "",
         openingTime: formData.openingTime?.format("HH:mm") || "",
         closingTime: formData.closingTime?.format("HH:mm") || "",
         createdAt: serverTimestamp(),
@@ -248,16 +319,75 @@ export default function AccountSetup() {
                   error={!!errors.branchAddress}
                   helperText={errors.branchAddress}
                 />
-                <TextField
-                  name="operatingArea"
-                  label="Operating Area"
-                  value={formData.operatingArea}
-                  onChange={handleChange}
-                  fullWidth
-                  variant="outlined"
-                  error={!!errors.operatingArea}
-                  helperText={errors.operatingArea}
-                />
+                
+                {/* Operating Area - Cascading Dropdowns */}
+                <FormControl fullWidth variant="outlined" error={!!errors.operatingRegion}>
+                  <InputLabel>Region</InputLabel>
+                  <Select
+                    name="operatingRegion"
+                    value={formData.operatingRegion}
+                    onChange={handleChange}
+                    label="Region"
+                  >
+                    {regions.map((region) => (
+                      <MenuItem key={region.code} value={region.code}>
+                        {region.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.operatingRegion && (
+                    <FormHelperText>{errors.operatingRegion}</FormHelperText>
+                  )}
+                </FormControl>
+
+                <FormControl 
+                  fullWidth 
+                  variant="outlined" 
+                  error={!!errors.operatingProvince}
+                  disabled={!formData.operatingRegion}
+                >
+                  <InputLabel>Province</InputLabel>
+                  <Select
+                    name="operatingProvince"
+                    value={formData.operatingProvince}
+                    onChange={handleChange}
+                    label="Province"
+                  >
+                    {provinces.map((province) => (
+                      <MenuItem key={province.code} value={province.code}>
+                        {province.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.operatingProvince && (
+                    <FormHelperText>{errors.operatingProvince}</FormHelperText>
+                  )}
+                </FormControl>
+
+                <FormControl 
+                  fullWidth 
+                  variant="outlined" 
+                  error={!!errors.operatingCity}
+                  disabled={!formData.operatingProvince}
+                >
+                  <InputLabel>City / Municipality</InputLabel>
+                  <Select
+                    name="operatingCity"
+                    value={formData.operatingCity}
+                    onChange={handleChange}
+                    label="City / Municipality"
+                  >
+                    {cities.map((city) => (
+                      <MenuItem key={city.code} value={city.code}>
+                        {city.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.operatingCity && (
+                    <FormHelperText>{errors.operatingCity}</FormHelperText>
+                  )}
+                </FormControl>
+
                 <Box display="flex" gap={2}>
                   <TimePicker
                     label="Opening Time"
@@ -304,11 +434,14 @@ export default function AccountSetup() {
                 onClick={handleSubmit}
                 disabled={!isValid || submitted}
                 sx={{
-                  backgroundImage: "linear-gradient(#00b2e1, #0064b5)",
+                  backgroundColor: "#00b2e1",
                   color: "white",
                   fontFamily: "LEMON MILK",
                   borderRadius: "10px",
                   padding: "10px 20px",
+                  "&:hover": {
+                    backgroundColor: "#0099c7",
+                  },
                 }}
               >
                 {submitted ? "Saving..." : "Submit"}
