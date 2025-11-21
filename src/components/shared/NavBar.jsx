@@ -7,46 +7,57 @@ import InventoryIcon from "@mui/icons-material/Inventory";
 import MapIcon from "@mui/icons-material/Map";
 import QRCode from "react-qr-code";
 import SidebarFooterAccount from "./SidebarFooterAccount.jsx";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "/src/firebaseConfig";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "/src/firebaseConfig";
+import { onAuthStateChanged } from "firebase/auth";
 import { responsiveFontSizes, responsiveDimensions, responsiveSpacing } from "../../theme/responsiveTheme.js";
 
 export default function NavBar() {
-  const user = JSON.parse(localStorage.getItem("user"));
   const [branchId, setBranchId] = useState("");
   const [branch, setBranch] = useState(null);
   const location = useLocation();
-  useEffect(() => {
-    const fetchBranch = async () => {
-      if (user?.uid) {
-        try {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
 
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setBranchId("");
+        setBranch(null);
+        return;
+      }
+
+      // Set up real-time listener for user document
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribeSnapshot = onSnapshot(
+        userRef,
+        (userSnap) => {
           if (userSnap.exists()) {
             const userData = userSnap.data();
             if (userData.branchId) {
               setBranchId(userData.branchId);
               setBranch(userData);
-
-              localStorage.setItem(
-                "branch",
-                JSON.stringify({ id: user.uid, ...userData })
-              );
             } else {
               console.warn("User has no branchId field:", user.uid);
+              setBranchId("");
+              setBranch(null);
             }
           } else {
             console.warn("No such user:", user.uid);
+            setBranchId("");
+            setBranch(null);
           }
-        } catch (error) {
+        },
+        (error) => {
           console.error("Error fetching branch:", error);
         }
-      }
-    };
+      );
 
-    fetchBranch();
-  }, [user]);
+      // Cleanup snapshot listener
+      return () => unsubscribeSnapshot();
+    });
+
+    // Cleanup auth listener
+    return () => unsubscribeAuth();
+  }, []);
 
   const navLinks = [
     { label: "Dashboard", path: "/dashboard", icon: <DashboardIcon /> },
