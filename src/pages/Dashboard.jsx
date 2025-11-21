@@ -12,7 +12,8 @@ import {
   fetchOverspeedingData,
   fetchRecentIncidents,
 } from "../services.js";
-import { auth } from "../firebaseConfig.js";
+import { auth, db } from "../firebaseConfig.js";
+import { doc, getDoc } from "firebase/firestore";
 import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function Dashboard() {
@@ -45,6 +46,19 @@ export default function Dashboard() {
             if (user) {
               const uid = user.uid; 
               console.log("Current user UID:", uid);
+
+              // Fetch branchId from user document
+              const userDoc = await getDoc(doc(db, "users", uid));
+              const branchId = userDoc.exists() ? userDoc.data().branchId : null;
+              
+              if (!branchId) {
+                console.error("User has no branchId");
+                setLoading(false);
+                return;
+              }
+
+              console.log("Current user branchId:", branchId);
+
               const [
                 parcels,
                 drivers,
@@ -55,12 +69,12 @@ export default function Dashboard() {
                 recentIncidents,
               ] = await Promise.all([
                 fetchParcelStatusData(uid),
-                fetchDriverStatusData(),
+                fetchDriverStatusData(branchId),
                 fetchDeliveryVolumeData("daily", uid),
                 fetchDeliveryVolumeData("weekly", uid),
-                fetchOverspeedingData("daily"),
-                fetchOverspeedingData("weekly"),
-                fetchRecentIncidents(5),
+                fetchOverspeedingData("daily", branchId),
+                fetchOverspeedingData("weekly", branchId),
+                fetchRecentIncidents(5, branchId),
               ]);
 
               console.log("Fetched data:", { parcels, drivers, dailyDeliveries, weeklyDeliveries, dailySpeed, weeklySpeed, recentIncidents });
@@ -75,10 +89,10 @@ export default function Dashboard() {
             } else {
               console.log("No user logged in.");
             }
+            setLoading(false);
           });
         } catch (error) {
           console.error("Error fetching dashboard data:", error);
-        } finally {
           setLoading(false);
         }
       };

@@ -411,21 +411,21 @@ export const getParcel = async (parcelId) => {
 
 /**
  * Fetch driver status statistics
+ * @param {string} branchId - Branch ID to filter drivers
  * @returns {Promise<Object>} Object with driver status counts
  */
-export const fetchDriverStatusData = async () => {
+export const fetchDriverStatusData = async (branchId) => {
   try {
-    const branch = JSON.parse(localStorage.getItem("branch"));
-    if (!branch || !branch.branchId) {
-      console.error("Branch data is missing or invalid in localStorage.");
+    if (!branchId) {
+      console.error("Branch ID is required.");
       return { available: 0, onTrip: 0, offline: 0 };
     }
-    console.log("Fetched branch from localStorage:", branch);
+    console.log("Fetching drivers for branch:", branchId);
     const driversRef = collection(db, "users");
     const driverDoc = query(
       driversRef,
       where("role", "==", "driver"),
-      where("branchId", "==", branch.branchId)
+      where("branchId", "==", branchId)
     );
 
     const driversSnapshot = await getDocs(driverDoc);
@@ -531,18 +531,18 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
 /**
  * Fetch overspeeding incidents data for a given period
  * @param {string} period - "daily" or "weekly"
+ * @param {string} branchId - Branch ID to filter incidents
  * @returns {Promise<Array>} Array of overspeeding data
  */
-export const fetchOverspeedingData = async (period = "daily") => {
+export const fetchOverspeedingData = async (period = "daily", branchId) => {
   try {
-    const branch = JSON.parse(localStorage.getItem("branch"));
-    if (!branch || !branch.branchId) {
-      console.error("Branch data is missing or invalid in localStorage.");
+    if (!branchId) {
+      console.error("Branch ID is required.");
       return [];
     }
 
     const incidentsRef = collection(db, "users");
-    const q = query(incidentsRef, where("branchId", "==", branch.branchId));
+    const q = query(incidentsRef, where("branchId", "==", branchId));
 
     const incidentsSnapshot = await getDocs(q);
     const violationData = {};
@@ -599,21 +599,20 @@ export const fetchOverspeedingData = async (period = "daily") => {
 /**
  * Fetch recent violation incidents
  * @param {number} limitCount - Number of recent incidents to fetch
+ * @param {string} branchId - Branch ID to filter incidents
  * @returns {Promise<Array>} Array of recent violations
  */
-export const fetchRecentIncidents = async (limitCount = 5) => {
+export const fetchRecentIncidents = async (limitCount = 5, branchId) => {
   try {
-    const branch = JSON.parse(localStorage.getItem("branch"));
-
-    if (!branch || !branch.branchId) {
-      console.error("Branch data is missing or invalid in localStorage.");
+    if (!branchId) {
+      console.error("Branch ID is required.");
       return [];
     }
     const usersRef = collection(db, "users");
     const usersQuery = query(
       usersRef,
       where("role", "==", "driver"),
-      where("branchId", "==", branch.branchId)
+      where("branchId", "==", branchId)
     );
     const usersSnapshot = await getDocs(usersQuery);
     const violations = [];
