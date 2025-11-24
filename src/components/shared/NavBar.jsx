@@ -25,7 +25,6 @@ export default function NavBar() {
         return;
       }
 
-      // Set up real-time listener for user document
       const userRef = doc(db, "users", user.uid);
       const unsubscribeSnapshot = onSnapshot(
         userRef,
@@ -51,11 +50,9 @@ export default function NavBar() {
         }
       );
 
-      // Cleanup snapshot listener
       return () => unsubscribeSnapshot();
     });
 
-    // Cleanup auth listener
     return () => unsubscribeAuth();
   }, []);
 
