@@ -14,9 +14,9 @@ DialogTitle,
 DialogContent,
 DialogActions,
 Button,
+Checkbox,
 } from "@mui/material";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import DeleteIcon from "@mui/icons-material/Delete";
 import { useState, useEffect } from "react";
 import ParcelDetailsModal from "./ParcelDetailsModal";
 import { doc, deleteDoc } from "firebase/firestore";
@@ -25,10 +25,8 @@ import { STATUS_COLORS } from "../../utils";
 
 const statusOrder = ["pending", "out for delivery", "delivered", "failed", "returned"];
 
-export default function ParcelList({ parcels = [], loading = false }) {
+export default function ParcelList({ parcels = [], loading = false, selectedParcels = [], onSelectionChange }) {
 const [selectedParcel, setSelectedParcel] = useState(null);
-const [parcelToDelete, setParcelToDelete] = useState(null);
-const [deleting, setDeleting] = useState(false);
 
 useEffect(() => {
 console.log("📦 ParcelList received:", parcels);
@@ -48,22 +46,21 @@ return "Invalid Date";
 const handleOpen = (parcel) => setSelectedParcel(parcel);
 const handleClose = () => setSelectedParcel(null);
 
-const confirmDelete = (parcel) => {
-setParcelToDelete(parcel);
+const handleToggleSelect = (parcelId, event) => {
+event.stopPropagation();
+if (selectedParcels.includes(parcelId)) {
+onSelectionChange(selectedParcels.filter(id => id !== parcelId));
+} else {
+onSelectionChange([...selectedParcels, parcelId]);
+}
 };
 
-const cancelDelete = () => setParcelToDelete(null);
-
-const handleDelete = async () => {
-if (!parcelToDelete) return;
-setDeleting(true);
-try {
-await deleteDoc(doc(db, "parcels", parcelToDelete.id));
-setParcelToDelete(null);
-} catch (error) {
-console.error("Error deleting parcel:", error);
-} finally {
-setDeleting(false);
+const handleSelectAll = (event) => {
+event.stopPropagation();
+if (selectedParcels.length === sortedParcels.length) {
+onSelectionChange([]);
+} else {
+onSelectionChange(sortedParcels.map(p => p.id));
 }
 };
 
@@ -97,7 +94,20 @@ return (b.dateAdded?.seconds || 0) - (a.dateAdded?.seconds || 0);
 });
 
 return (
-<> <Grid container spacing={2}>
+<>
+{onSelectionChange && sortedParcels.length > 0 && (
+<Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+<Checkbox
+checked={selectedParcels.length === sortedParcels.length && sortedParcels.length > 0}
+indeterminate={selectedParcels.length > 0 && selectedParcels.length < sortedParcels.length}
+onChange={handleSelectAll}
+/>
+<Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+Select All ({selectedParcels.length}/{sortedParcels.length})
+</Typography>
+</Box>
+)}
+<Grid container spacing={2}>
 {sortedParcels.map((parcel, index) => {
 const statusKey = parcel.status?.toLowerCase() || "pending";
 const isInvalid = !parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null;
@@ -126,20 +136,20 @@ const color = isInvalid ? "#f21b3f" : (STATUS_COLORS[statusKey] || "#c4cad0");
             }}
             onClick={() => handleOpen(parcel)}
           >
-            {/* Delete Button */}
-            <IconButton
-              size="small"
-              onClick={(e) => { e.stopPropagation(); confirmDelete(parcel); }}
-              sx={{
-                position: "absolute",
-                top: 4,
-                right: 4,
-                zIndex: 1,
-                color: "#f21b3f",
-              }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
+            {/* Selection Checkbox */}
+            {onSelectionChange && (
+              <Checkbox
+                checked={selectedParcels.includes(parcel.id)}
+                onChange={(e) => handleToggleSelect(parcel.id, e)}
+                onClick={(e) => e.stopPropagation()}
+                sx={{
+                  position: "absolute",
+                  top: 4,
+                  left: 4,
+                  zIndex: 1,
+                }}
+              />
+            )}
 
             <Avatar
               sx={{
@@ -190,23 +200,6 @@ const color = isInvalid ? "#f21b3f" : (STATUS_COLORS[statusKey] || "#c4cad0");
       );
     })}
   </Grid>
-
-  {/* Delete Confirmation Dialog */}
-  <Dialog open={Boolean(parcelToDelete)} onClose={cancelDelete}>
-    <DialogTitle>Confirm Delete</DialogTitle>
-    <DialogContent>
-      Are you sure you want to delete this parcel?
-      <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
-        {parcelToDelete?.id || "Unnamed Parcel"}
-      </Typography>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={cancelDelete} disabled={deleting}>Cancel</Button>
-      <Button color="error" onClick={handleDelete} disabled={deleting}>
-        {deleting ? "Deleting..." : "Delete"}
-      </Button>
-    </DialogActions>
-  </Dialog>
 
   <ParcelDetailsModal
     open={Boolean(selectedParcel)}

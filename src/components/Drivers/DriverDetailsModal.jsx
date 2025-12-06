@@ -14,10 +14,11 @@ import {
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import MapIcon from "@mui/icons-material/Map";
+import PersonRemoveIcon from "@mui/icons-material/PersonRemove";
 import { arrayUnion, doc, Timestamp, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { useNavigate } from "react-router-dom";
-import { normalizeDriver } from "../../services";
+import { normalizeDriver, removeDriverFromBranch } from "../../services";
 import {
   isInsideZone,
   calculateDistanceKm,
@@ -137,6 +138,27 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
 
   const handleViewMap = () => {
     navigate(`/dashboard/map?driverId=${d.id}`);
+  };
+
+  const handleRemoveFromBranch = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to remove ${d.fullName || displayName} from this branch? They will no longer be associated with your branch.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      const result = await removeDriverFromBranch(d.id);
+      if (result.success) {
+        alert(`${d.fullName || displayName} has been removed from the branch.`);
+        onClose(); // Close modal after successful removal
+      } else {
+        alert(`Failed to remove driver: ${result.error}`);
+      }
+    } catch (err) {
+      console.error("Error removing driver:", err);
+      alert("An error occurred while removing the driver. Please try again.");
+    }
   };
 
   if (!open) return null;
@@ -306,6 +328,21 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
               See on Map
             </Button>
           )}
+
+          <Button
+            variant="contained"
+            startIcon={<PersonRemoveIcon />}
+            onClick={handleRemoveFromBranch}
+            sx={{
+              textTransform: "none",
+              borderRadius: 2,
+              fontWeight: 500,
+              backgroundColor: "#f21b3f",
+              "&:hover": { backgroundColor: "#d01735" },
+            }}
+          >
+            Remove Driver
+          </Button>
 
           <Button
             variant="outlined"

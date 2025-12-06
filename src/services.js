@@ -250,7 +250,9 @@ export const addParcel = async (parcelData, uid) => {
     if (!uid) throw new Error("User ID (uid) is required to add a parcel");
 
     const now = new Date();
+    // Use reference as parcelId if provided, otherwise generate one
     const parcelId =
+      parcelData.reference ||
       parcelData.id ||
       `PKG${Math.floor(Math.random() * 1_000_000)
         .toString()
@@ -260,7 +262,7 @@ export const addParcel = async (parcelData, uid) => {
       uid,
       weight: parcelData.weight,
       packageId: parcelId,
-      reference: parcelId || "",
+      reference: parcelId,
       status: parcelData.status || "Pending",
       recipient: parcelData.recipient || "",
       recipientContact: parcelData.recipientContact || "",
@@ -408,6 +410,30 @@ export const getParcel = async (parcelId) => {
 // ============================================================================
 // DRIVER SERVICES
 // ============================================================================
+
+/**
+ * Remove a driver from their branch
+ * @param {string} driverId - Driver's user ID
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const removeDriverFromBranch = async (driverId) => {
+  try {
+    if (!driverId) {
+      throw new Error("Driver ID is required");
+    }
+
+    const driverRef = doc(db, "users", driverId);
+    await updateDoc(driverRef, {
+      branchId: "",
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: "Driver removed from branch successfully" };
+  } catch (error) {
+    console.error("Error removing driver from branch:", error);
+    return { success: false, error: error.message };
+  }
+};
 
 /**
  * Fetch driver status statistics

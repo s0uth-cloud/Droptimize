@@ -17,6 +17,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { serverTimestamp } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { addParcel } from "../../services";
+import CSVImportModal from "./CSVImportModal";
 
 async function geocodeAddress({ street, barangay, municipalityName, provinceName, regionName }) {
   const parts = [street, barangay, municipalityName, provinceName, regionName]
@@ -59,6 +60,7 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [rows, setRows] = useState([]);
+  const [openCSVModal, setOpenCSVModal] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -285,9 +287,28 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
           boxShadow: 10,
         }}
       >
-        <Typography variant="h6" fontWeight="bold" mb={3}>
-          Add Multiple Parcels
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+          <Typography variant="h6" fontWeight="bold">
+            Add Multiple Parcels
+          </Typography>
+          <Button
+            variant="contained"
+            sx={{
+              bgcolor: "#29bf12",
+              color: "#fff",
+              fontWeight: "bold",
+              textTransform: "none",
+              boxShadow: "0px 3px 8px rgba(0,0,0,0.15)",
+              "&:hover": {
+                bgcolor: "#24a810",
+                boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
+              },
+            }}
+            onClick={() => setOpenCSVModal(true)}
+          >
+            Import CSV
+          </Button>
+        </Stack>
 
         {rows.map((row, idx) => {
           const provinceList = provinces.filter((p) => p.regionCode === row.region);
@@ -493,6 +514,16 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
             </Button>
           </Stack>
         </Stack>
+
+        {/* CSV Import Modal */}
+        <CSVImportModal
+          open={openCSVModal}
+          handleClose={() => setOpenCSVModal(false)}
+          onSuccess={() => {
+            setOpenCSVModal(false);
+            onSave?.();
+          }}
+        />
       </Box>
     </Modal>
   );
