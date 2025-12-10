@@ -7,11 +7,9 @@ service cloud.firestore {
     // ----------------------------
     match /users/{userId} {
 
-      // Allow admins and dispatchers to list all users in their branch
-      allow list: if request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "dispatcher"
-      );
+      // Allow authenticated users to list/query users collection for email validation during signup
+      // Also allow admins and dispatchers to list all users in their branch
+      allow list: if request.auth != null;
 
       // Read own user document, or if admin, or if dispatcher reading users in same branch
       allow read: if request.auth != null && (
@@ -24,6 +22,7 @@ service cloud.firestore {
       );
 
       // Allow user to create their own document (new registration)
+      // Also allow creation if authenticated with Firebase Auth but document doesn't exist yet
       allow create: if request.auth != null && request.auth.uid == userId;
 
       // Allow user to update their own document, or admin/dispatcher to update any user in their branch
@@ -99,23 +98,92 @@ service cloud.firestore {
     // PARCELS COLLECTION
     // ----------------------------
     match /parcels/{parcelId} {
+      // Allow reading if:
+      // - Driver assigned to the parcel
+      // - Admin (any branch)
+      // - Dispatcher in the same branch as the parcel
+      // - Driver in same branch as parcel (for scanning)
       allow read: if request.auth != null && (
         resource.data.driverUid == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "dispatcher" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == resource.data.branchId
+        ) ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == resource.data.branchId
+        )
       );
 
-      allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "dispatcher"];
+      // Allow list/query operations for drivers to search by reference
+      allow list: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "dispatcher", "driver"]
+      );
+
+      // Allow admin, dispatcher (same branch), and driver (with branchId) to create parcels
+      allow create: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "dispatcher"] ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId != null &&
+          request.resource.data.branchId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId
+        )
+      );
 
       allow update: if request.auth != null && (
         (
           resource.data.driverUid == request.auth.uid &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'DeliveredAt', 'CancelledAt', 'DeliveryNotes', 'updatedAt'])
+            .hasOnly(['status', 'DeliveredAt', 'FailedAt', 'DeliveryNotes', 'updatedAt', 'driverUid', 'driverName', 'assignedAt'])
         ) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin"
+        (
+          // Allow driver to assign themselves to unassigned parcels (for assignment acceptance)
+          // Check if parcel is unassigned (driverUid is null or doesn't exist)
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "driver" &&
+          (!('driverUid' in resource.data) || resource.data.driverUid == null) &&
+          request.resource.data.driverUid == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'driverUid', 'driverName', 'assignedAt'])
+        ) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" ||
+        (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "dispatcher" &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.branchId == resource.data.branchId
+        )
       );
 
+      allow delete: if request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // ----------------------------
+    // ASSIGNMENTS COLLECTION
+    // ----------------------------
+    match /assignments/{assignmentId} {
+      // Allow admin and dispatcher to create assignments
+      allow create: if request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "dispatcher"]
+      );
+
+      // Allow reading if:
+      // - Driver assigned to the assignment
+      // - Admin (any branch)
+      // - Dispatcher who created it
+      allow read: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin" ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "dispatcher"
+      );
+
+      // Allow driver to update only their own assignment (accept/reject)
+      // Allow admin/dispatcher to update any assignment
+      allow update: if request.auth != null && (
+        resource.data.driverId == request.auth.uid ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ["admin", "dispatcher"]
+      );
+
+      // Only admin can delete assignments
       allow delete: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }

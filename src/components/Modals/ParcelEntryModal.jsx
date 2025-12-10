@@ -104,7 +104,8 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
     barangay: "",
     barangayName: "",
     weight: 0,
-    message: ""
+    message: "",
+    reference: ""
   });
 
   const updateRow = (index, key, value, labelKey, labelValue) => {
@@ -164,9 +165,10 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
         !row.region ||
         !row.province ||
         !row.municipality ||
-        !row.barangay
+        !row.barangay ||
+        !row.reference
       ) {
-        alert(`⚠️ Please complete all required fields in parcel ${i + 1}`);
+        alert(`⚠️ Please complete all required fields (including reference number) in parcel ${i + 1}`);
         setSaving(false);
         return;
       }
@@ -200,16 +202,17 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
           // Use fallback destination
           await addParcel(
             {
-              weight: row.weight,
-              status: row.status,
               recipient: row.recipient,
               recipientContact: row.recipientContact,
               street: row.street,
-              region: row.regionName,
-              province: row.provinceName,
-              municipality: row.municipalityName,
               barangay: row.barangayName,
+              municipality: row.municipalityName,
+              province: row.provinceName,
+              region: row.regionName,
+              weight: row.weight,
+              status: row.status,
               message: row.message || "",
+              reference: row.reference || "",
               dateAdded: serverTimestamp(),
               destination: fallbackDestination,
             },
@@ -219,16 +222,17 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
           // Use the successfully geocoded destination
           await addParcel(
             {
-              weight: row.weight,
-              status: row.status,
               recipient: row.recipient,
               recipientContact: row.recipientContact,
               street: row.street,
-              region: row.regionName,
-              province: row.provinceName,
-              municipality: row.municipalityName,
               barangay: row.barangayName,
+              municipality: row.municipalityName,
+              province: row.provinceName,
+              region: row.regionName,
+              weight: row.weight,
+              status: row.status,
               message: row.message || "",
+              reference: row.reference || "",
               dateAdded: serverTimestamp(),
               destination: destination,
             },
@@ -359,6 +363,16 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                 </Grid>
                 <Grid item xs={12} md={4}>
                   <TextField
+                    label="Reference / Tracking No."
+                    value={row.reference}
+                    onChange={(e) => updateRow(idx, "reference", e.target.value)}
+                    size="small"
+                    fullWidth
+                    placeholder="e.g., ORD-12345"
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <TextField
                     label="Parcel Weight (kg)"
                     value={row.weight}
                     onChange={(e) => updateRow(idx, "weight", e.target.value)}
@@ -366,16 +380,14 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     label="Message / Notes (Optional)"
                     value={row.message}
                     onChange={(e) => updateRow(idx, "message", e.target.value)}
                     size="small"
                     fullWidth
-                    multiline
-                    rows={2}
-                    placeholder="Add any special instructions or notes for this parcel..."
+                    placeholder="Special instructions..."
                   />
                 </Grid>
               </Grid>

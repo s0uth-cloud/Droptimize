@@ -25,17 +25,25 @@ import { getAuth } from "firebase/auth";
 import { addParcel } from "../../services";
 
 // Field name normalization mapping - flexible field matching
+// These fields map to what is displayed in ParcelDetailsModal
 const FIELD_MAPPINGS = {
+  // Recipient fields (displayed in modal)
   recipient: ["recipient", "name", "customer", "receiver", "recipientname", "customer_name", "clientname", "customername", "to", "toname"],
   recipientContact: ["recipientcontact", "contact", "phone", "mobile", "phonenumber", "phone_number", "contactnumber", "tel", "telephone", "cellphone", "mobilenumber"],
+  
+  // Address fields (displayed in modal)
   street: ["street", "address", "streetaddress", "address1", "line1", "addr", "streetname", "houseaddress", "buildingaddress"],
   barangay: ["barangay", "brgy", "village", "district", "subdivision", "neighborhood"],
   municipality: ["municipality", "city", "town", "citymunicipality", "city_municipality", "citytown"],
   province: ["province", "state", "prov"],
   region: ["region", "area", "regionalarea"],
+  
+  // Parcel info fields (displayed in modal)
   weight: ["weight", "kg", "kilograms", "mass", "packageweight", "parcelweight", "wt", "weightkg"],
   message: ["message", "note", "notes", "remarks", "instructions", "comments", "specialinstructions", "deliveryinstructions", "memo"],
   reference: ["reference", "ref", "tracking", "trackingnumber", "parcelid", "packageid", "id", "orderid", "ordernumber", "referencenumber", "trackingid"],
+  
+  // Address parsing helper (not displayed directly but used to populate address fields)
   fulladdress: ["fulladdress", "completeaddress", "address2", "addressline", "addressfull"],
 };
 
@@ -221,13 +229,23 @@ function parseCSV(csvText) {
   // Parse header
   const headers = lines[0].split(",").map(h => normalizeFieldName(h.trim()));
 
-  // Parse rows
+  // Parse rows - only extract fields that are used in ParcelDetailsModal
   const rows = [];
+  const allowedFields = new Set([
+    'recipient', 'recipientContact', 'street', 'barangay', 
+    'municipality', 'province', 'region', 'weight', 'message', 
+    'reference', 'fulladdress'
+  ]);
+  
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
     const row = {};
+    
+    // Only include fields that are in our allowed list
     headers.forEach((header, index) => {
-      row[header] = values[index] || "";
+      if (allowedFields.has(header)) {
+        row[header] = values[index] || "";
+      }
     });
     
     // Parse and separate address components
@@ -268,12 +286,15 @@ export default function CSVImportModal({ open, handleClose, onSuccess }) {
         // Relaxed validation - only check for essential fields
         const validationErrors = [];
         rows.forEach((row, index) => {
-          // Core requirements: recipient name and contact
+          // Core requirements: recipient name, contact, and reference number
           if (!row.recipient || !row.recipient.trim()) {
             validationErrors.push(`Row ${index + 1}: Missing recipient name`);
           }
           if (!row.recipientContact || !row.recipientContact.trim()) {
             validationErrors.push(`Row ${index + 1}: Missing contact information`);
+          }
+          if (!row.reference || !row.reference.trim()) {
+            validationErrors.push(`Row ${index + 1}: Missing reference/tracking number`);
           }
           
           // At least one location field should be present for geocoding
@@ -360,22 +381,30 @@ export default function CSVImportModal({ open, handleClose, onSuccess }) {
           });
         }
 
+        // Only include fields that are displayed in ParcelDetailsModal
         const parcelData = {
+          // Recipient Information (displayed in modal)
           recipient: row.recipient,
           recipientContact: row.recipientContact || "",
+          
+          // Address Information (displayed in modal)
           street: row.street || "",
           barangay: row.barangay || "",
           municipality: row.municipality || "",
           province: row.province || "",
           region: row.region || "",
+          
+          // Parcel Information (displayed in modal)
           weight: parseFloat(row.weight || 0),
           message: row.message || "",
           reference: row.reference || "",
+          
+          // System fields (displayed in modal)
           status: "Pending",
           dateAdded: serverTimestamp(),
+          
+          // System fields (used by map/routing, not displayed in modal but required for functionality)
           destination: destination,
-          importedFromCSV: true,
-          importedAt: serverTimestamp(),
         };
 
         await addParcel(parcelData, user.uid);
@@ -452,10 +481,11 @@ export default function CSVImportModal({ open, handleClose, onSuccess }) {
             <Typography variant="body2" component="div">
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 <li>First row must contain column headers</li>
-                <li><strong>Required columns:</strong> recipient (or name/customer), contact (or phone/mobile), weight</li>
-                <li><strong>Location:</strong> At least one location field is required (region, province, municipality/city, barangay, or street/address)</li>
-                <li><strong>Flexible column names:</strong> Many variations are supported (e.g., "Name"/"Customer"/"Recipient", "Phone"/"Mobile"/"Contact", "City"/"Municipality")</li>
-                <li><strong>Optional columns:</strong> message (or notes/remarks), reference (or tracking/orderid)</li>
+                <li><strong>Required:</strong> Recipient name, contact number, weight, and at least one location field</li>
+                <li><strong>Location:</strong> Include region, province, municipality/city, barangay, or street</li>
+                <li><strong>Optional:</strong> Message/notes, reference/tracking number</li>
+                <li><strong>Flexible naming:</strong> Column names can vary (e.g., "Name" or "Recipient", "Phone" or "Contact")</li>
+                <li><strong>Note:</strong> Extra columns will be ignored - only necessary fields are imported</li>
               </ul>
             </Typography>
           </Paper>

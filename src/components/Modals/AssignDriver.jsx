@@ -5,8 +5,10 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  addDoc,
 } from "firebase/firestore";
-import { db } from "../../firebaseConfig";
+import { db, auth } from "../../firebaseConfig";
+import QRCode from "react-qr-code";
 import { normalizeDriver } from "../../services";
 import { calculateDistanceKm, TIME_ALLOWANCES } from "../../utils";
 import {
@@ -26,6 +28,7 @@ import {
   Stack,
   TextField,
   Chip,
+  Checkbox,
 } from "@mui/material";
 
 export default function AssignDriverModal({ open, onClose, driver }) {
@@ -33,9 +36,13 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
-  const [speedKmh, setSpeedKmh] = useState(45);
+  const speedKmh = 45; // Fixed speed for ETC calculations
   const [etcText, setEtcText] = useState("");
   const [calculatingETC, setCalculatingETC] = useState(false);
+  const [selectedParcels, setSelectedParcels] = useState([]);
+  const [qrCodeData, setQrCodeData] = useState("");
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [generatingQR, setGeneratingQR] = useState(false);
 
   const d = normalizeDriver(driver);
 
@@ -66,10 +73,6 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       () => setUserLocation(null)
     );
   }, []);
-
-  useEffect(() => {
-    setSpeedKmh(Number(driver?.speedAvg) || 45);
-  }, [driver]);
 
   useEffect(() => {
     if (!d.id || !driver) return;
@@ -214,50 +217,88 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     }
   }, [userLocation, speedKmh]);
 
-  const handleAssign = async (parcel) => {
+  const toggleSelectParcel = (parcel) => {
     if (!parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null) {
-      alert("⚠️ Cannot assign parcel: Invalid destination. Please update the parcel location.");
+      alert("⚠️ Cannot select parcel: Invalid destination. Please update the parcel location.");
       return;
     }
     
-    // Check weight limit
-    const parcelWeight = Number(parcel.weight) || 0;
-    const newTotalWeight = totalAssignedWeight + parcelWeight;
+    const isSelected = selectedParcels.some(p => p.id === parcel.id);
     
-    if (vehicleWeightLimit > 0 && newTotalWeight > vehicleWeightLimit) {
-      const overweight = newTotalWeight - vehicleWeightLimit;
-      alert(
-        `⚠️ Cannot assign parcel: Weight limit exceeded!\n\n` +
-        `Parcel weight: ${parcelWeight} kg\n` +
-        `Current load: ${totalAssignedWeight} kg\n` +
-        `Vehicle capacity: ${vehicleWeightLimit} kg\n` +
-        `This would exceed the limit by ${overweight.toFixed(1)} kg.`
-      );
-      return;
-    }
-    
-    try {
-      await updateDoc(doc(db, "parcels", parcel.id), {
-        driverUid: d.id,
-        driverName: d.fullName || "Unknown Driver",
-        assignedAt: serverTimestamp(),
-        status: "Out for Delivery",
-      });
-    } catch (error) {
-      console.error("Error assigning parcel:", error);
+    if (isSelected) {
+      setSelectedParcels(selectedParcels.filter(p => p.id !== parcel.id));
+    } else {
+      // Check weight limit
+      const parcelWeight = Number(parcel.weight) || 0;
+      const currentSelectionWeight = selectedParcels.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+      const newTotalWeight = totalAssignedWeight + currentSelectionWeight + parcelWeight;
+      
+      if (vehicleWeightLimit > 0 && newTotalWeight > vehicleWeightLimit) {
+        const overweight = newTotalWeight - vehicleWeightLimit;
+        alert(
+          `⚠️ Cannot select parcel: Weight limit exceeded!\n\n` +
+          `Parcel weight: ${parcelWeight} kg\n` +
+          `Currently assigned: ${totalAssignedWeight} kg\n` +
+          `Selected for assignment: ${currentSelectionWeight} kg\n` +
+          `Vehicle capacity: ${vehicleWeightLimit} kg\n` +
+          `This would exceed the limit by ${overweight.toFixed(1)} kg.`
+        );
+        return;
+      }
+      
+      setSelectedParcels([...selectedParcels, parcel]);
     }
   };
 
-  const handleSaveAverage = async (e) => {
-    e.preventDefault();
-    try {
-      await updateDoc(doc(db, "users", d.id), {
-        speedAvg: Number(speedKmh) || 0,
-      });
-      alert("Speed Average has been saved successfully!");
-    } catch (e) {
-      console.error("Error saving driver's speed average", e);
+  const handleGenerateQR = async () => {
+    if (selectedParcels.length === 0) {
+      alert("Please select at least one parcel to assign.");
+      return;
     }
+
+    setGeneratingQR(true);
+    try {
+      // Create assignment document
+      const assignmentData = {
+        driverId: d.id,
+        driverName: d.fullName || "Unknown Driver",
+        parcels: selectedParcels.map(p => ({
+          id: p.id,
+          recipient: p.recipient,
+          recipientContact: p.recipientContact,
+          reference: p.reference,
+          weight: p.weight,
+          destination: p.destination,
+          street: p.street,
+          barangay: p.barangay,
+          municipality: p.municipality,
+          province: p.province,
+          region: p.region,
+        })),
+        createdAt: serverTimestamp(),
+        status: "pending", // pending, accepted, rejected
+        createdBy: auth.currentUser?.email || "Unknown",
+      };
+
+      const assignmentRef = await addDoc(collection(db, "assignments"), assignmentData);
+      const assignmentId = assignmentRef.id;
+
+      // Generate QR code data
+      const qrData = JSON.stringify({ type: "assignment", id: assignmentId });
+      
+      setQrCodeData(qrData);
+      setShowQRModal(true);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    } finally {
+      setGeneratingQR(false);
+    }
+  };
+
+  const handleCloseQRModal = () => {
+    setShowQRModal(false);
+    setQrCodeData("");
+    setSelectedParcels([]);
   };
 
   const handleUnassign = async (parcel) => {
@@ -296,6 +337,7 @@ export default function AssignDriverModal({ open, onClose, driver }) {
           const isInvalid = !parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null;
           const parcelWeight = Number(parcel.weight) || 0;
           const wouldExceedLimit = type === "unassigned" && vehicleWeightLimit > 0 && (totalAssignedWeight + parcelWeight) > vehicleWeightLimit;
+          const isSelected = selectedParcels.some(p => p.id === parcel.id);
           
           return (
             <ListItem
@@ -359,17 +401,23 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                   </Typography>
                 )}
               </Box>
-              <Button
-                variant={type === "unassigned" ? "contained" : "outlined"}
-                color={type === "unassigned" ? "primary" : "error"}
-                size="small"
-                disabled={(isInvalid && type === "unassigned") || wouldExceedLimit}
-                onClick={() =>
-                  type === "unassigned" ? handleAssign(parcel) : handleUnassign(parcel)
-                }
-              >
-                {type === "unassigned" ? "Assign" : "Unassign"}
-              </Button>
+              {type === "unassigned" ? (
+                <Checkbox
+                  checked={isSelected}
+                  disabled={isInvalid || wouldExceedLimit}
+                  onChange={() => toggleSelectParcel(parcel)}
+                  sx={{ color: "#00b2e1" }}
+                />
+              ) : (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={() => handleUnassign(parcel)}
+                >
+                  Unassign
+                </Button>
+              )}
             </ListItem>
           );
         })}
@@ -399,11 +447,12 @@ export default function AssignDriverModal({ open, onClose, driver }) {
   }, [parcels.assignedToDriver, computeTotalETA]);
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="md"
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="md"
       sx={{
         "& .MuiDialog-paper": {
           borderRadius: 3,
@@ -441,21 +490,6 @@ export default function AssignDriverModal({ open, onClose, driver }) {
                 etcText && <Chip label={`ETC: ${etcText}`} />
               )}
             </Stack>
-
-            <Stack direction="row" spacing={1} mt={2} alignItems="center">
-              <Typography variant="body2" color="text.secondary">Speed Average (km/h)</Typography>
-              <TextField
-                size="small"
-                type="number"
-                value={speedKmh}
-                onChange={(e) => setSpeedKmh(Number(e.target.value))}
-                placeholder="Enter Speed Average (default 45)"
-                sx={{ width: 180 }}
-              />
-              <Button onClick={handleSaveAverage} variant="outlined" color="primary">
-                Save Average
-              </Button>
-            </Stack>
           </Box>
         </Stack>
       </DialogTitle>
@@ -479,10 +513,82 @@ export default function AssignDriverModal({ open, onClose, driver }) {
       </DialogContent>
 
       <DialogActions>
+        {tab === 0 && selectedParcels.length > 0 && (
+          <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" fontWeight="bold" sx={{color: "#00b2e1"}}>
+              {selectedParcels.length} parcel{selectedParcels.length > 1 ? "s" : ""} selected
+            </Typography>
+            <Button 
+              onClick={handleGenerateQR} 
+              variant="contained" 
+              disabled={generatingQR}
+              sx={{ backgroundColor: "#00b2e1", "&:hover": { backgroundColor: "#0099c7" } }}
+            >
+              {generatingQR ? "Generating..." : "Generate QR Code"}
+            </Button>
+          </Box>
+        )}
         <Button onClick={onClose} variant="outlined" color="primary">
           Done
         </Button>
       </DialogActions>
-    </Dialog>
+      </Dialog>
+
+      {/* QR Code Modal */}
+      <Dialog
+      open={showQRModal}
+      onClose={handleCloseQRModal}
+      maxWidth="sm"
+      fullWidth
+    >
+      <DialogTitle sx={{ textAlign: "center", bgcolor: "#00b2e1", color: "#fff" }}>
+        Assignment QR Code
+      </DialogTitle>
+      <DialogContent sx={{ py: 4 }}>
+        <Stack spacing={3} alignItems="center">
+          <Typography variant="h6" textAlign="center">
+            {d.fullName || "Driver"}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            {selectedParcels.length} parcel{selectedParcels.length > 1 ? "s" : ""} ready for assignment
+          </Typography>
+          
+          {qrCodeData && (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "white",
+                border: "2px solid #ddd",
+                borderRadius: 2,
+                display: "inline-block",
+              }}
+            >
+              <QRCode value={qrCodeData} size={300} />
+            </Box>
+          )}
+
+          <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ fontStyle: "italic" }}>
+            Driver must scan this QR code to receive the assignment
+          </Typography>
+
+          <Box sx={{ width: "100%", maxHeight: 200, overflowY: "auto", bgcolor: "#f5f5f5", p: 2, borderRadius: 1 }}>
+            <Typography variant="caption" fontWeight="bold" gutterBottom>
+              Parcels in this assignment:
+            </Typography>
+            {selectedParcels.map((p, idx) => (
+              <Typography key={idx} variant="caption" display="block">
+                {idx + 1}. {p.reference} - {p.recipient} ({p.barangay}, {p.municipality})
+              </Typography>
+            ))}
+          </Box>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleCloseQRModal} variant="contained" color="primary">
+          Close
+        </Button>
+      </DialogActions>
+      </Dialog>
+    </>
   );
 }

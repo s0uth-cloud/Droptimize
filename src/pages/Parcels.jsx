@@ -59,7 +59,7 @@ export default function Parcels() {
         const status = (parcel.status || "pending").toLowerCase();
         if (status === "delivered") newCounts.delivered++;
         else if (status === "out for delivery") newCounts.outForDelivery++;
-        else if (status === "failed" || status === "returned")
+        else if (status === "failed" || status === "returned" || status === "cancelled")
           newCounts.failed++;
         else newCounts.pending++;
       });

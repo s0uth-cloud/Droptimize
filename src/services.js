@@ -142,15 +142,46 @@ export function normalizeParcel(raw = {}) {
 // ============================================================================
 
 /**
- * Fetch all parcels, optionally filtered by user ID
- * @param {string|null} uid - User ID to filter parcels
+ * Fetch all parcels, optionally filtered by user ID or branch ID
+ * @param {string|null} uid - User ID to filter parcels (for role-based filtering)
  * @returns {Promise<Array>} Array of parcel objects
  */
 export const fetchAllParcels = async (uid = null) => {
   try {
     const parcels = [];
     const parcelsRef = collection(db, "parcels");
-    const parcelsSnapshot = await getDocs(parcelsRef);
+    
+    // Get user data to determine role and branchId
+    let userRole = null;
+    let userBranchId = null;
+    
+    if (uid) {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userRole = userData.role;
+        userBranchId = userData.branchId;
+      }
+    }
+    
+    // Query based on role
+    let parcelsSnapshot;
+    
+    if (userRole === "admin") {
+      // Admin can see all parcels
+      parcelsSnapshot = await getDocs(parcelsRef);
+    } else if (userRole === "dispatcher" && userBranchId) {
+      // Dispatcher sees parcels from their branch
+      const q = query(parcelsRef, where("branchId", "==", userBranchId));
+      parcelsSnapshot = await getDocs(q);
+    } else if (userRole === "driver" && uid) {
+      // Driver sees only their assigned parcels
+      const q = query(parcelsRef, where("driverUid", "==", uid));
+      parcelsSnapshot = await getDocs(q);
+    } else {
+      // Fallback: fetch all and filter by uid if provided
+      parcelsSnapshot = await getDocs(parcelsRef);
+    }
 
     if (parcelsSnapshot.empty) return parcels;
 
@@ -158,12 +189,13 @@ export const fetchAllParcels = async (uid = null) => {
       const parcelId = parcelDoc.id;
       const parcelData = parcelDoc.data();
 
-      if (uid && parcelData.uid !== uid) continue;
+      // If no role determined and uid provided, filter by creator uid
+      if (!userRole && uid && parcelData.uid !== uid) continue;
 
       parcels.push({
         id: parcelId,
         weight: parcelData.weight,
-        reference: parcelId || "",
+        reference: parcelData.reference || parcelId || "",
         status: parcelData.status || "Pending",
         recipient: parcelData.recipient || "",
         recipientContact: parcelData.recipientContact || "",
@@ -258,6 +290,27 @@ export const addParcel = async (parcelData, uid) => {
         .toString()
         .padStart(6, "0")}`;
 
+    // Get user data to retrieve branchId and adminId
+    const userDocRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    let branchId = null;
+    let adminId = null;
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      branchId = userData.branchId || null;
+      
+      // Get adminId from branch document
+      if (branchId) {
+        const branchDocRef = doc(db, "branches", branchId);
+        const branchDoc = await getDoc(branchDocRef);
+        if (branchDoc.exists()) {
+          adminId = branchDoc.data().adminId || null;
+        }
+      }
+    }
+
     const dataToStore = {
       uid,
       weight: parcelData.weight,
@@ -273,7 +326,10 @@ export const addParcel = async (parcelData, uid) => {
       region: parcelData.region || "",
       dateAdded: parcelData.dateAdded || Timestamp.fromDate(now),
       createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
       destination: parcelData.destination || { latitude: null, longitude: null },
+      branchId: branchId,
+      adminId: adminId,
     };
 
     const parcelDocRef = doc(db, "parcels", parcelId);
@@ -498,7 +554,7 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
     const parcelsRef = collection(db, "parcels");
     const q = query(
       parcelsRef,
-      where("status", "in", ["Delivered", "Cancelled"]),
+      where("status", "in", ["Delivered", "Failed", "Cancelled"]),
       where("uid", "==", uid)
     );
 
@@ -510,15 +566,21 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
 
       const ts =
         parcel.DeliveredAt?.toDate?.() ??
-        parcel.CancelledAt?.toDate?.() ??
+        parcel.FailedAt?.toDate?.() ??
         parcel.createdAt?.toDate?.();
 
       if (!ts || isNaN(ts.getTime?.())) return;
       const date = new Date(ts);
 
+      // Use local date instead of UTC to match user's timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const localDateString = `${year}-${month}-${day}`;
+
       const dateKey =
         period === "daily"
-          ? date.toISOString().split("T")[0]
+          ? localDateString
           : `Week ${getWeekNumber(date)}`;
 
       if (!deliveryData[dateKey]) {
@@ -531,7 +593,7 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
 
       if (parcel.status === "Delivered") {
         deliveryData[dateKey].deliveries++;
-      } else if (parcel.status === "Cancelled") {
+      } else if (parcel.status === "Failed" || parcel.status === "Cancelled") {
         deliveryData[dateKey].cancelled++;
       }
     });

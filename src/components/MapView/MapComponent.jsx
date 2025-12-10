@@ -313,7 +313,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       qy = query(
         parcelsRef,
         where("driverUid", "==", uidCandidates[0]),
-        where("status", "not-in", ["Delivered", "Cancelled"])
+        where("status", "not-in", ["Delivered", "Failed"])
       );
     } else if (uidCandidates.length > 1) {
       // For multiple UIDs, Firestore 'in' works, but 'not-in' cannot be combined.
@@ -325,7 +325,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       
       // Client-side filtering for 'not-in' if multiple UIDs
       if (uidCandidates.length > 1) {
-        docs = docs.filter((p) => !["Delivered", "Cancelled"].includes(p.status));
+        docs = docs.filter((p) => !["Delivered", "Failed"].includes(p.status));
       }
 
       setDriverParcels(docs);
