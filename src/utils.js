@@ -7,7 +7,10 @@
 // CONSTANTS
 // ============================================================================
 
-// Status colors
+/**
+ * Color mapping for driver and parcel statuses used across the UI.
+ * Provides consistent visual representation of states in charts, cards, and markers.
+ */
 export const STATUS_COLORS = {
   available: "#29bf12",
   delivering: "#ff9914",
@@ -19,14 +22,20 @@ export const STATUS_COLORS = {
   pending: "#c4cad0",
 };
 
-// Driver statuses
+/**
+ * Standard driver status constants to ensure consistency across the application.
+ * Used for status updates, filtering, and conditional rendering.
+ */
 export const DRIVER_STATUS = {
   AVAILABLE: "Available",
   DELIVERING: "Delivering",
   OFFLINE: "Offline",
 };
 
-// Parcel statuses
+/**
+ * Standard parcel status constants in lowercase for database queries and filtering.
+ * Used throughout the app for status comparisons and updates.
+ */
 export const PARCEL_STATUS = {
   PENDING: "pending",
   OUT_FOR_DELIVERY: "out for delivery",
@@ -35,11 +44,20 @@ export const PARCEL_STATUS = {
   RETURNED: "returned",
 };
 
-// Crosswalk detection
+/**
+ * Crosswalk detection radius (15 meters) for triggering speed limit warnings.
+ */
 export const CROSSWALK_RADIUS_KM = 0.015;
+
+/**
+ * Speed limit enforced within crosswalk zones (10 km/h).
+ */
 export const CROSSWALK_LIMIT_KMH = 10;
 
-// Map colors for slowdown zones
+/**
+ * Color mapping for different zone types displayed on the map and in the legend.
+ * Church (purple), Crosswalk (blue), School (orange), Slowdown (green).
+ */
 export const ZONE_COLORS = {
   Church: "#9c27b0",
   Crosswalk: "#2196F3",
@@ -47,7 +65,10 @@ export const ZONE_COLORS = {
   Slowdown: "#29bf12",
 };
 
-// Speed and distance thresholds
+/**
+ * Thresholds and constants for speed calculation and GPS filtering.
+ * Used by the speed tracking system to filter noise, smooth readings, and detect stationary vs moving states.
+ */
 export const SPEED_THRESHOLDS = {
   MOVING_THRESHOLD_M: 2,
   STATIONARY_DIST_M: 5,

@@ -89,7 +89,7 @@ export default function ParcelStatusCard({
               overflow: "hidden",
             }}
           >
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 1, fontSize: responsiveFontSizes.body2, fontWeight: 600 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: responsiveFontSizes.body2, fontWeight: 600 }}>
               Total: {total}
             </Typography>
             <Divider sx={{ mb: 1 }} />
@@ -125,7 +125,7 @@ export default function ParcelStatusCard({
                     />
                     <Typography 
                       variant="body2" 
-                      color="textSecondary" 
+                      color="text.secondary" 
                       sx={{ 
                         fontSize: responsiveFontSizes.caption,
                         fontWeight: 500,

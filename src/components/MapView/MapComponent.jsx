@@ -1,3 +1,5 @@
+// External dependencies
+import { useEffect, useRef, useState } from "react";
 import {
   Add as AddIcon,
   Close as CloseIcon,
@@ -17,29 +19,36 @@ import {
   collection,
   doc,
   getDoc,
-  onSnapshot as onCollectionSnapshot,
   onSnapshot,
+  onSnapshot as onCollectionSnapshot,
   query,
   updateDoc,
   where,
 } from "firebase/firestore";
-import { useEffect, useRef, useState } from "react";
+
+// Internal dependencies
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
 import { normalizeDriver } from "../../services";
 import {
-  calculateDistanceMeters,
   calculateBearing,
-  smoothHeading,
-  normalizeDegrees,
-  ZONE_COLORS,
-  SPEED_THRESHOLDS,
+  calculateDistanceMeters,
   DEFAULT_MAP_CENTER,
+  normalizeDegrees,
+  smoothHeading,
+  SPEED_THRESHOLDS,
+  ZONE_COLORS,
 } from "../../utils";
 
 const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
 const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
 
+/**
+ * Main map component that displays real-time driver tracking, zone management, and route visualization.
+ * Features include: Google Maps integration with traffic layer, real-time driver location and speed tracking using GPS smoothing algorithms, slowdown zone creation/editing (Church, Crosswalk, School, Slowdown), crosswalk node management, driver parcel route visualization with Google Directions API, and zone legend display.
+ * Implements EMA smoothing for speed calculations, stationary detection with position windowing, and automatic map centering on selected driver.
+ * Monitors drivers, parcels, slowdown zones, and crosswalk nodes collections in real-time using Firestore onSnapshot listeners.
+ */
 export default function MapComponent({ user, selectedDriver, mapRef }) {
   const [center, setCenter] = useState(DEFAULT_MAP_CENTER);
   const [userLocation, setUserLocation] = useState(null);
@@ -448,6 +457,11 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     return R * c;
   };
 
+  /**
+   * Handles map click events for adding new slowdown zone pins.
+   * Only processes clicks when in slowdown zone adding mode and no pin is currently placed.
+   * Sets the pin location to the clicked latitude/longitude for zone creation.
+   */
   const handleMapClick = (e) => {
     if (!addingSlowdown || slowdownPin) return;
     setSlowdownPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });

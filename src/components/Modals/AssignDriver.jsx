@@ -1,36 +1,45 @@
-import { useEffect, useState, useCallback } from "react";
+// External dependencies
+import { useCallback, useEffect, useState } from "react";
 import {
-  collection,
-  onSnapshot,
-  doc,
-  updateDoc,
-  serverTimestamp,
-  addDoc,
-} from "firebase/firestore";
-import { db, auth } from "../../firebaseConfig";
-import QRCode from "react-qr-code";
-import { normalizeDriver } from "../../services";
-import { calculateDistanceKm, TIME_ALLOWANCES } from "../../utils";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   List,
   ListItem,
-  Button,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Divider,
   Stack,
+  Tab,
+  Tabs,
   TextField,
-  Chip,
-  Checkbox,
+  Typography,
 } from "@mui/material";
+import {
+  addDoc,
+  collection,
+  doc,
+  onSnapshot,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
+import QRCode from "react-qr-code";
 
+// Internal dependencies
+import { auth, db } from "../../firebaseConfig";
+import { normalizeDriver } from "../../services";
+import { calculateDistanceKm, TIME_ALLOWANCES } from "../../utils";
+
+/**
+ * Modal component for assigning parcels to a specific driver with QR code generation and ETC calculation.
+ * Displays unassigned parcels filtered by driver's preferred routes and already assigned parcels.
+ * Features include: weight capacity validation, multi-parcel selection, Google Maps API-based ETC calculation with fallback to straight-line distance, and QR code generation for driver acceptance.
+ * Monitors parcels collection in real-time using onSnapshot and automatically updates available parcels list.
+ */
 export default function AssignDriverModal({ open, onClose, driver }) {
   const [parcels, setParcels] = useState({ unassigned: [], assignedToDriver: [] });
   const [loading, setLoading] = useState(true);
@@ -114,6 +123,12 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     return () => unsub();
   }, [d.id, driver]);
 
+  /**
+   * Calculates total estimated time of arrival (ETA) for delivering all parcels in the list using Google Maps Directions API.
+   * Optimizes the route order automatically using waypoint optimization, calculates driving time based on actual road conditions, and adds 5 minutes per parcel for handling time.
+   * Falls back to straight-line distance calculation with nearest-neighbor algorithm if Google Maps API fails or is unavailable.
+   * Returns formatted time string (e.g., "2h 30m" or "45m").
+   */
   const computeTotalETA = useCallback(async (list) => {
     if (!userLocation || !list?.length || !window.google) return "";
     
@@ -217,6 +232,12 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     }
   }, [userLocation, speedKmh]);
 
+  /**
+   * Toggles parcel selection for assignment with validation for destination validity and vehicle weight capacity.
+   * Validates that parcel has valid destination coordinates before allowing selection.
+   * Checks if adding the parcel would exceed the vehicle's weight limit by calculating total of assigned + selected parcels.
+   * Displays detailed alert messages for validation failures including weight breakdown and capacity limits.
+   */
   const toggleSelectParcel = (parcel) => {
     if (!parcel.destination || parcel.destination.latitude === null || parcel.destination.longitude === null) {
       alert("⚠️ Cannot select parcel: Invalid destination. Please update the parcel location.");
@@ -250,6 +271,12 @@ export default function AssignDriverModal({ open, onClose, driver }) {
     }
   };
 
+  /**
+   * Generates a QR code for the selected parcels by creating an assignment document in Firestore.
+   * Creates an assignment with driver info, parcel details, timestamps, and pending status.
+   * Stores assignment ID in QR code as JSON format {type: "assignment", id: assignmentId}.
+   * Driver scans this QR code to accept the assignment, which triggers batch parcel updates to "Out for Delivery" status.
+   */
   const handleGenerateQR = async () => {
     if (selectedParcels.length === 0) {
       alert("Please select at least one parcel to assign.");

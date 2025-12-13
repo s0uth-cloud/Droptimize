@@ -195,7 +195,7 @@ export default function ResetPasswordForm() {
             Set New Password
           </Typography>
           {email && (
-            <Typography variant="body2" color="textSecondary" sx={{ fontSize: responsiveFontSizes.body2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: responsiveFontSizes.body2 }}>
               Account: {email}
             </Typography>
           )}

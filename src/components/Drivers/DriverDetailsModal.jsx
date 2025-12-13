@@ -194,7 +194,11 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
 
         <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Avatar src={photo} alt={displayName} sx={{ width: 72, height: 72, mx: "auto", mb: 1 }} />
               <Chip
                 label={status}
@@ -208,7 +212,11 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
               />
             </Grid>
 
-            <Grid item xs={12} sm={8}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 8
+              }}>
               <Stack spacing={1}>
                 <Typography variant="subtitle1" fontWeight="bold">
                   {displayName}

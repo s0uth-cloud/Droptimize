@@ -67,10 +67,18 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
       setLoading(true);
       try {
         const [r, p, m, b] = await Promise.all([
-          fetch("https://psgc.gitlab.io/api/regions/").then((res) => res.json()),
-          fetch("https://psgc.gitlab.io/api/provinces/").then((res) => res.json()),
-          fetch("https://psgc.gitlab.io/api/cities-municipalities/").then((res) => res.json()),
-          fetch("https://psgc.gitlab.io/api/barangays/").then((res) => res.json()),
+          fetch("https://psgc.gitlab.io/api/regions/")
+            .then((res) => res.json())
+            .catch((err) => { console.error("Failed to fetch regions:", err); return []; }),
+          fetch("https://psgc.gitlab.io/api/provinces/")
+            .then((res) => res.json())
+            .catch((err) => { console.error("Failed to fetch provinces:", err); return []; }),
+          fetch("https://psgc.gitlab.io/api/cities-municipalities/")
+            .then((res) => res.json())
+            .catch((err) => { console.error("Failed to fetch cities:", err); return []; }),
+          fetch("https://psgc.gitlab.io/api/barangays/")
+            .then((res) => res.json())
+            .catch((err) => { console.error("Failed to fetch barangays:", err); return []; }),
         ]);
 
         setRegions(r);
@@ -343,7 +351,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                 Recipient Information
               </Typography>
               <Grid container spacing={2} mb={2}>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <TextField
                     label="Recipient Name"
                     value={row.recipient}
@@ -352,7 +364,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <TextField
                     label="Recipient Contact"
                     value={row.recipientContact}
@@ -361,7 +377,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 4
+                  }}>
                   <TextField
                     label="Reference / Tracking No."
                     value={row.reference}
@@ -371,7 +391,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     placeholder="e.g., ORD-12345"
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <TextField
                     label="Parcel Weight (kg)"
                     value={row.weight}
@@ -380,7 +404,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <TextField
                     label="Message / Notes (Optional)"
                     value={row.message}
@@ -396,7 +424,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                 Destination Address
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <TextField
                     label="Street (Optional)"
                     value={row.street}
@@ -405,7 +437,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.region}
                     onChange={(e) => {
@@ -427,7 +463,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.province}
                     onChange={(e) => {
@@ -452,7 +492,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.municipality}
                     onChange={(e) => {
@@ -477,7 +521,11 @@ export default function ParcelEntryModal({ open, handleClose, onSave }) {
                     ))}
                   </Select>
                 </Grid>
-                <Grid item xs={12} md={3}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 3
+                  }}>
                   <Select
                     value={row.barangay}
                     onChange={(e) => {
