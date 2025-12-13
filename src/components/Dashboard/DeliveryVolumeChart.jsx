@@ -1,10 +1,19 @@
+// External dependencies
 import { useState } from "react";
-import { Paper, Typography, Box, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Box, Paper, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 
+/**
+ * Displays delivery volume and success rate trends in a line chart with daily/weekly view toggle.
+ * Shows three series: total deliveries, success rate percentage, and failed/returned count.
+ * Supports responsive sizing and handles empty data states with a "No data available" message.
+ */
 export default function DeliveryVolumeChart({ dailyData = [], weeklyData = [] }) {
   const [view, setView] = useState("daily");
 
+  /**
+   * Handles view toggle between daily and weekly data display.
+   */
   const handleChange = (_, nextView) => {
     if (nextView) setView(nextView);
   };

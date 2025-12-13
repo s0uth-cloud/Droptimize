@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import ParcelsHeader from "../components/Parcels/ParcelsHeader.jsx";
 import ParcelList from "../components/Parcels/ParcelList.jsx";
 import ParcelEntryModal from "../components/Modals/ParcelEntryModal.jsx";
+import CSVImportModal from "../components/Modals/CSVImportModal.jsx";
 import { fetchAllParcels } from "../services.js";
 import { auth } from "../firebaseConfig.js";
 
@@ -25,9 +26,10 @@ export default function Parcels() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSort, setSelectedSort] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
-  const [openCSVModal, setOpenCSVModal] = useState(false);
+  const [openManualModal, setOpenManualModal] = useState(false);
   const [parcels, setParcels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedParcels, setSelectedParcels] = useState([]);
 
   const fetchParcels = async () => {
     setLoading(true);
@@ -57,7 +59,7 @@ export default function Parcels() {
         const status = (parcel.status || "pending").toLowerCase();
         if (status === "delivered") newCounts.delivered++;
         else if (status === "out for delivery") newCounts.outForDelivery++;
-        else if (status === "failed" || status === "returned")
+        else if (status === "failed" || status === "returned" || status === "cancelled")
           newCounts.failed++;
         else newCounts.pending++;
       });
@@ -136,6 +138,23 @@ export default function Parcels() {
     return 0;
   });
 
+  const handleBulkDelete = async () => {
+    try {
+      const { deleteDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../firebaseConfig.js");
+      
+      await Promise.all(
+        selectedParcels.map((id) => deleteDoc(doc(db, "parcels", id)))
+      );
+      
+      setSelectedParcels([]);
+      fetchParcels();
+    } catch (error) {
+      console.error("Error deleting parcels:", error);
+      alert("Failed to delete some parcels. Please try again.");
+    }
+  };
+
   return (
     <Box 
       sx={{
@@ -208,7 +227,7 @@ export default function Parcels() {
                 boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
               },
             }}
-            onClick={() => setOpenCSVModal(true)}
+            onClick={() => setOpenManualModal(true)}
           >
             + Add Parcels
           </Button>
@@ -236,12 +255,40 @@ export default function Parcels() {
           >
             {loading ? "Refreshing..." : "Refresh"}
           </Button>
+
+          {selectedParcels.length > 0 && (
+            <Button
+              variant="contained"
+              sx={{
+                bgcolor: "#f21b3f",
+                color: "#fff",
+                fontWeight: "bold",
+                px: 3,
+                height: 45,
+                borderRadius: 2,
+                width: { xs: "100%", sm: 180 },
+                textTransform: "none",
+                boxShadow: "0px 3px 8px rgba(0,0,0,0.15)",
+                "&:hover": {
+                  bgcolor: "#d41735",
+                  boxShadow: "0px 4px 10px rgba(0,0,0,0.2)",
+                },
+              }}
+              onClick={() => {
+                if (window.confirm(`Delete ${selectedParcels.length} selected parcel(s)?`)) {
+                  handleBulkDelete();
+                }
+              }}
+            >
+              Delete Selected ({selectedParcels.length})
+            </Button>
+          )}
         </Stack>
 
-        {/* Parcel Entry modal */}
+        {/* Modals */}
         <ParcelEntryModal
-          open={openCSVModal}
-          handleClose={() => setOpenCSVModal(false)}
+          open={openManualModal}
+          handleClose={() => setOpenManualModal(false)}
           onSave={fetchParcels}
         />
 
@@ -264,6 +311,8 @@ export default function Parcels() {
             parcels={sortedParcels}
             loading={loading}
             onRefresh={fetchParcels}
+            selectedParcels={selectedParcels}
+            onSelectionChange={setSelectedParcels}
           />
         )}
       </Paper>

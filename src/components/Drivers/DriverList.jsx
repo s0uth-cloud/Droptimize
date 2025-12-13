@@ -99,19 +99,19 @@ export default function DriverList({
                 {getDisplayName(d)}
               </Typography>
 
-              <Typography variant="body2" color="textSecondary" noWrap>
+              <Typography variant="body2" color="text.secondary" noWrap>
                 ID: {driver?.id || driver?.uid || "N/A"}
               </Typography>
 
               {driver?.vehicleType && (
-                <Typography variant="body2" color="textSecondary" noWrap>
+                <Typography variant="body2" color="text.secondary" noWrap>
                   Vehicle: {driver.vehicleType}
                   {driver?.vehicleWeightLimit ? ` (${driver.vehicleWeightLimit} kg)` : ""}
                 </Typography>
               )}
 
               {driver?.phoneNumber && (
-                <Typography variant="body2" color="textSecondary" noWrap>
+                <Typography variant="body2" color="text.secondary" noWrap>
                   Contact: {driver.phoneNumber}
                 </Typography>
               )}

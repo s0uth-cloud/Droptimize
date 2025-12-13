@@ -1,3 +1,5 @@
+// External dependencies
+import { useEffect, useRef, useState } from "react";
 import {
   Add as AddIcon,
   Close as CloseIcon,
@@ -17,29 +19,36 @@ import {
   collection,
   doc,
   getDoc,
-  onSnapshot as onCollectionSnapshot,
   onSnapshot,
+  onSnapshot as onCollectionSnapshot,
   query,
   updateDoc,
   where,
 } from "firebase/firestore";
-import { useEffect, useRef, useState } from "react";
+
+// Internal dependencies
 import deliverLogo from "/src/assets/warehouse.svg";
 import { db } from "/src/firebaseConfig";
 import { normalizeDriver } from "../../services";
 import {
-  calculateDistanceMeters,
   calculateBearing,
-  smoothHeading,
-  normalizeDegrees,
-  ZONE_COLORS,
-  SPEED_THRESHOLDS,
+  calculateDistanceMeters,
   DEFAULT_MAP_CENTER,
+  normalizeDegrees,
+  smoothHeading,
+  SPEED_THRESHOLDS,
+  ZONE_COLORS,
 } from "../../utils";
 
 const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
 const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
 
+/**
+ * Main map component that displays real-time driver tracking, zone management, and route visualization.
+ * Features include: Google Maps integration with traffic layer, real-time driver location and speed tracking using GPS smoothing algorithms, slowdown zone creation/editing (Church, Crosswalk, School, Slowdown), crosswalk node management, driver parcel route visualization with Google Directions API, and zone legend display.
+ * Implements EMA smoothing for speed calculations, stationary detection with position windowing, and automatic map centering on selected driver.
+ * Monitors drivers, parcels, slowdown zones, and crosswalk nodes collections in real-time using Firestore onSnapshot listeners.
+ */
 export default function MapComponent({ user, selectedDriver, mapRef }) {
   const [center, setCenter] = useState(DEFAULT_MAP_CENTER);
   const [userLocation, setUserLocation] = useState(null);
@@ -313,7 +322,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       qy = query(
         parcelsRef,
         where("driverUid", "==", uidCandidates[0]),
-        where("status", "not-in", ["Delivered", "Cancelled"])
+        where("status", "not-in", ["Delivered", "Failed"])
       );
     } else if (uidCandidates.length > 1) {
       // For multiple UIDs, Firestore 'in' works, but 'not-in' cannot be combined.
@@ -325,7 +334,7 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
       
       // Client-side filtering for 'not-in' if multiple UIDs
       if (uidCandidates.length > 1) {
-        docs = docs.filter((p) => !["Delivered", "Cancelled"].includes(p.status));
+        docs = docs.filter((p) => !["Delivered", "Failed"].includes(p.status));
       }
 
       setDriverParcels(docs);
@@ -448,6 +457,11 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
     return R * c;
   };
 
+  /**
+   * Handles map click events for adding new slowdown zone pins.
+   * Only processes clicks when in slowdown zone adding mode and no pin is currently placed.
+   * Sets the pin location to the clicked latitude/longitude for zone creation.
+   */
   const handleMapClick = (e) => {
     if (!addingSlowdown || slowdownPin) return;
     setSlowdownPin({ lat: e.latLng.lat(), lng: e.latLng.lng() });
@@ -800,6 +814,47 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
           .filter(Boolean)
         }
       </GoogleMap>
+
+      {/* Zone Legend */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 16,
+          left: 16,
+          backgroundColor: "white",
+          borderRadius: 2,
+          padding: 2,
+          boxShadow: 3,
+          minWidth: 150,
+        }}
+      >
+        <Box sx={{ fontWeight: "bold", marginBottom: 1, fontSize: 14 }}>
+          Zone Types
+        </Box>
+        {Object.entries(ZONE_COLORS).map(([type, color]) => (
+          <Box
+            key={type}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 0.5,
+              fontSize: 13,
+            }}
+          >
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                backgroundColor: color,
+                borderRadius: "50%",
+                marginRight: 1,
+                border: "1px solid rgba(0,0,0,0.2)",
+              }}
+            />
+            {type}
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 }

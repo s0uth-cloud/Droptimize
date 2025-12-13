@@ -1,21 +1,32 @@
+// External dependencies
 import { useEffect, useState } from "react";
-import { Typography, CircularProgress, Box, Divider } from "@mui/material";
-import ParcelStatusCard from "../components/Dashboard/ParcelStatusCard.jsx";
-import DriverStatusCard from "../components/Dashboard/DriverStatusCard.jsx";
+import { Box, CircularProgress, Divider, Typography } from "@mui/material";
+import { doc, getDoc } from "firebase/firestore";
+
+// Internal components
 import DeliveryVolumeChart from "../components/Dashboard/DeliveryVolumeChart.jsx";
+import DriverStatusCard from "../components/Dashboard/DriverStatusCard.jsx";
 import OverspeedingTrendChart from "../components/Dashboard/OverspeedingTrendChart.jsx";
+import ParcelStatusCard from "../components/Dashboard/ParcelStatusCard.jsx";
 import RecentIncidentCard from "../components/Dashboard/RecentIncidentCard.jsx";
+
+// Services and config
+import { auth, db } from "../firebaseConfig.js";
 import {
-  fetchParcelStatusData,
-  fetchDriverStatusData,
   fetchDeliveryVolumeData,
+  fetchDriverStatusData,
   fetchOverspeedingData,
+  fetchParcelStatusData,
   fetchRecentIncidents,
 } from "../services.js";
-import { auth, db } from "../firebaseConfig.js";
-import { doc, getDoc } from "firebase/firestore";
-import { responsiveFontSizes, responsiveSpacing, responsiveDimensions } from "../theme/responsiveTheme.js";
+import { responsiveDimensions, responsiveFontSizes, responsiveSpacing } from "../theme/responsiveTheme.js";
 
+/**
+ * Main dashboard page component that displays analytics and statistics for the admin interface.
+ * Fetches and displays parcel status counts, driver availability, delivery volume charts, overspeeding trends, and recent incidents.
+ * Implements branch-based filtering by retrieving the admin's branchId and passing it to relevant data fetching functions.
+ * All data is loaded on component mount and displayed in responsive cards and charts.
+ */
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [parcelData, setParcelData] = useState({
@@ -38,6 +49,11 @@ export default function Dashboard() {
   useEffect(() => {
     document.title = "Dashboard";
 
+      /**
+       * Fetches all dashboard data in parallel including parcel stats, driver stats, delivery volume, overspeeding data, and recent incidents.
+       * Retrieves the current admin's branchId from Firestore and uses it to filter branch-specific data.
+       * Uses Promise.all for efficient parallel data fetching and updates all state variables once data is retrieved.
+       */
       const fetchDashboardData = async () => {
         try {
           setLoading(true);

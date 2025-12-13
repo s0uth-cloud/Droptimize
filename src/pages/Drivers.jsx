@@ -5,6 +5,7 @@ import {
   Typography,
   CircularProgress,
   Divider,
+  Button,
 } from "@mui/material";
 import {
   collection,
@@ -21,6 +22,7 @@ import DriversHeader from "../components/Drivers/DriversHeader.jsx";
 import DriverList from "../components/Drivers/DriverList.jsx";
 import AssignDriverModal from "../components/Modals/AssignDriver.jsx";
 import DriverDetailsModal from "../components/Drivers/DriverDetailsModal.jsx";
+import InviteDriverModal from "../components/Modals/InviteDriverModal.jsx";
 
 const libraries = ["places", "geometry"];
 
@@ -39,6 +41,7 @@ export default function Drivers() {
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
 
   useEffect(() => {
@@ -138,17 +141,31 @@ export default function Drivers() {
       }}
     >
       {/* Page Title */}
-      <Typography
-        variant="h4"
-        sx={{
-          mb: 2,
-          color: "#00b2e1",
-          fontWeight: "bold",
-          fontFamily: "Lexend",
-        }}
-      >
-        Manage Drivers
-      </Typography>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography
+          variant="h4"
+          sx={{
+            color: "#00b2e1",
+            fontWeight: "bold",
+            fontFamily: "Lexend",
+          }}
+        >
+          Manage Drivers
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => setInviteModalOpen(true)}
+          sx={{
+            bgcolor: "#00b2e1",
+            "&:hover": { bgcolor: "#007bb5" },
+            textTransform: "none",
+            fontWeight: "bold",
+            px: 3,
+          }}
+        >
+          + Invite Driver
+        </Button>
+      </Stack>
 
       {!isLoaded && (
         <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
@@ -219,6 +236,13 @@ export default function Drivers() {
           setDetailsModalOpen(false);
           handleAssignParcelClick(driver);
         }}
+      />
+
+      {/* Invite Driver Modal */}
+      <InviteDriverModal
+        open={inviteModalOpen}
+        handleClose={() => setInviteModalOpen(false)}
+        branchId={branchId}
       />
     </Box>
   );

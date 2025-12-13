@@ -1,6 +1,20 @@
+// Firebase imports
 import { initializeApp } from "firebase/app";
-import { createUserWithEmailAndPassword, getAuth, onAuthStateChanged, sendEmailVerification, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  getFirestore,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -18,7 +32,11 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Registrations of User
+/**
+ * Registers a new admin user by creating a Firebase Auth account and initializing their Firestore profile with basic information.
+ * Sends an email verification to the provided email address and updates the user's display name with the full name from the form data.
+ * Returns an object with success status and the created user object, or an error message if registration fails.
+ */
 export const registerUser = async (formData) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(
@@ -45,6 +63,11 @@ export const registerUser = async (formData) => {
   }
 };
 
+/**
+ * Authenticates a user with email and password, validates their admin role from Firestore, and stores their information in localStorage.
+ * Checks if a user profile exists in Firestore and verifies the role is "admin" before allowing access, signing out non-admin users immediately.
+ * Returns an object with success status and user data, or an error message if authentication fails or access is denied.
+ */
 export const loginUser = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -71,6 +94,11 @@ export const loginUser = async (email, password) => {
   }
 };
 
+/**
+ * Checks the current authentication state by listening to Firebase Auth state changes once and retrieving the user's Firestore profile.
+ * Returns a promise that resolves with authentication status, email verification status, and merged user data from both Auth and Firestore.
+ * Used during app initialization to restore admin sessions and verify authentication before allowing access to protected routes.
+ */
 export const checkAuth = () => {
   return new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

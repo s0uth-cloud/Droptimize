@@ -142,15 +142,48 @@ export function normalizeParcel(raw = {}) {
 // ============================================================================
 
 /**
- * Fetch all parcels, optionally filtered by user ID
- * @param {string|null} uid - User ID to filter parcels
- * @returns {Promise<Array>} Array of parcel objects
+ * Fetch all parcels, optionally filtered by user ID or branch ID.
+ * Implements role-based access control: admins see all parcels, dispatchers see branch parcels, drivers see assigned parcels.
+ * Retrieves user data to determine role and branchId, then queries accordingly.
+ * @param {string|null} uid - User ID to filter parcels (for role-based filtering)
+ * @returns {Promise<Array>} Array of parcel objects with weight, reference, status, recipient, address, timestamps, municipality, driver/branch info
  */
 export const fetchAllParcels = async (uid = null) => {
   try {
     const parcels = [];
     const parcelsRef = collection(db, "parcels");
-    const parcelsSnapshot = await getDocs(parcelsRef);
+    
+    // Get user data to determine role and branchId
+    let userRole = null;
+    let userBranchId = null;
+    
+    if (uid) {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        userRole = userData.role;
+        userBranchId = userData.branchId;
+      }
+    }
+    
+    // Query based on role
+    let parcelsSnapshot;
+    
+    if (userRole === "admin") {
+      // Admin can see all parcels
+      parcelsSnapshot = await getDocs(parcelsRef);
+    } else if (userRole === "dispatcher" && userBranchId) {
+      // Dispatcher sees parcels from their branch
+      const q = query(parcelsRef, where("branchId", "==", userBranchId));
+      parcelsSnapshot = await getDocs(q);
+    } else if (userRole === "driver" && uid) {
+      // Driver sees only their assigned parcels
+      const q = query(parcelsRef, where("driverUid", "==", uid));
+      parcelsSnapshot = await getDocs(q);
+    } else {
+      // Fallback: fetch all and filter by uid if provided
+      parcelsSnapshot = await getDocs(parcelsRef);
+    }
 
     if (parcelsSnapshot.empty) return parcels;
 
@@ -158,12 +191,13 @@ export const fetchAllParcels = async (uid = null) => {
       const parcelId = parcelDoc.id;
       const parcelData = parcelDoc.data();
 
-      if (uid && parcelData.uid !== uid) continue;
+      // If no role determined and uid provided, filter by creator uid
+      if (!userRole && uid && parcelData.uid !== uid) continue;
 
       parcels.push({
         id: parcelId,
         weight: parcelData.weight,
-        reference: parcelId || "",
+        reference: parcelData.reference || parcelId || "",
         status: parcelData.status || "Pending",
         recipient: parcelData.recipient || "",
         recipientContact: parcelData.recipientContact || "",
@@ -186,9 +220,11 @@ export const fetchAllParcels = async (uid = null) => {
 };
 
 /**
- * Fetch parcel status statistics
- * @param {string|null} uid - User ID to filter parcels
- * @returns {Promise<Object>} Object with status counts
+ * Fetch parcel status statistics with optional branch or user filtering.
+ * Categorizes parcels by status: delivered, out for delivery, failed/returned, pending.
+ * Iterates through all parcels or branch-specific parcels and returns counts for dashboard charts.
+ * @param {string|null} uid - User ID to filter parcels (determines role-based filtering)
+ * @returns {Promise<Object>} Object with status counts: {delivered, outForDelivery, failedOrReturned, pending, total}
  */
 export const fetchParcelStatusData = async (uid = null) => {
   try {
@@ -240,27 +276,52 @@ export const fetchParcelStatusData = async (uid = null) => {
 };
 
 /**
- * Add a new parcel
- * @param {Object} parcelData - Parcel data to add
- * @param {string} uid - User ID
- * @returns {Promise<Object>} Result object with success status
+ * Add a new parcel with comprehensive validation and automatic ID generation.
+ * Validates required fields (recipient, address, municipality, weight), checks municipality/barangay combinations.
+ * Generates unique parcel ID (PKG + 6 digits) if not provided, stores all details with timestamps.
+ * @param {Object} parcelData - Parcel data including recipient, address, municipality, barangay, weight, contactNumber
+ * @param {string} uid - User ID (creator/admin ID)
+ * @returns {Promise<Object>} Result object with {success, id, timestamp, uid} or error message
  */
 export const addParcel = async (parcelData, uid) => {
   try {
     if (!uid) throw new Error("User ID (uid) is required to add a parcel");
 
     const now = new Date();
+    // Use reference as parcelId if provided, otherwise generate one
     const parcelId =
+      parcelData.reference ||
       parcelData.id ||
       `PKG${Math.floor(Math.random() * 1_000_000)
         .toString()
         .padStart(6, "0")}`;
 
+    // Get user data to retrieve branchId and adminId
+    const userDocRef = doc(db, "users", uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    let branchId = null;
+    let adminId = null;
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      branchId = userData.branchId || null;
+      
+      // Get adminId from branch document
+      if (branchId) {
+        const branchDocRef = doc(db, "branches", branchId);
+        const branchDoc = await getDoc(branchDocRef);
+        if (branchDoc.exists()) {
+          adminId = branchDoc.data().adminId || null;
+        }
+      }
+    }
+
     const dataToStore = {
       uid,
       weight: parcelData.weight,
       packageId: parcelId,
-      reference: parcelId || "",
+      reference: parcelId,
       status: parcelData.status || "Pending",
       recipient: parcelData.recipient || "",
       recipientContact: parcelData.recipientContact || "",
@@ -271,7 +332,10 @@ export const addParcel = async (parcelData, uid) => {
       region: parcelData.region || "",
       dateAdded: parcelData.dateAdded || Timestamp.fromDate(now),
       createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now),
       destination: parcelData.destination || { latitude: null, longitude: null },
+      branchId: branchId,
+      adminId: adminId,
     };
 
     const parcelDocRef = doc(db, "parcels", parcelId);
@@ -290,10 +354,11 @@ export const addParcel = async (parcelData, uid) => {
 };
 
 /**
- * Update an existing parcel
- * @param {Object} parcelData - Parcel data to update
- * @param {string} parcelId - Parcel ID
- * @returns {Promise<Object>} Result object with success status
+ * Update an existing parcel by merging new data with existing fields.
+ * Removes undefined values to prevent overwriting, adds updatedAt timestamp, uses merge: true to preserve unmodified fields.
+ * @param {Object} parcelData - Parcel data to update (reference, status, recipient, address, etc.)
+ * @param {string} parcelId - Parcel ID to update
+ * @returns {Promise<Object>} Result object with {success, id} or error message
  */
 export const updateParcel = async (parcelData, parcelId) => {
   try {
@@ -326,9 +391,10 @@ export const updateParcel = async (parcelData, parcelId) => {
 };
 
 /**
- * Delete a parcel
+ * Delete a parcel permanently from Firestore.
+ * Validates parcel ID presence before deletion, removes the document from parcels collection.
  * @param {string} parcelId - Parcel ID to delete
- * @returns {Promise<Object>} Result object with success status
+ * @returns {Promise<Object>} Result object with {success: true} or error message
  */
 export const deleteParcel = async (parcelId) => {
   try {
@@ -342,10 +408,11 @@ export const deleteParcel = async (parcelId) => {
 };
 
 /**
- * Assign a parcel to a driver
- * @param {string} parcelId - Parcel ID
- * @param {string} driverId - Driver ID
- * @returns {Promise<boolean>} Success status
+ * Assign a parcel to a driver by updating parcel with driver info and incrementing driver's parcel counts.
+ * Fetches driver data, updates parcel with driverUid and driverName, increments parcelsLeft and totalTrips counters.
+ * @param {string} parcelId - Parcel ID to assign
+ * @param {string} driverId - Driver ID (user uid)
+ * @returns {Promise<boolean>} Success status (true if successful)
  */
 export async function assignParcelToDriver(parcelId, driverId) {
   const parcelRef = doc(db, "parcels", parcelId);
@@ -410,6 +477,30 @@ export const getParcel = async (parcelId) => {
 // ============================================================================
 
 /**
+ * Remove a driver from their branch
+ * @param {string} driverId - Driver's user ID
+ * @returns {Promise<Object>} Result object with success status
+ */
+export const removeDriverFromBranch = async (driverId) => {
+  try {
+    if (!driverId) {
+      throw new Error("Driver ID is required");
+    }
+
+    const driverRef = doc(db, "users", driverId);
+    await updateDoc(driverRef, {
+      branchId: "",
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: "Driver removed from branch successfully" };
+  } catch (error) {
+    console.error("Error removing driver from branch:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Fetch driver status statistics
  * @param {string} branchId - Branch ID to filter drivers
  * @returns {Promise<Object>} Object with driver status counts
@@ -462,17 +553,19 @@ export const fetchDriverStatusData = async (branchId) => {
 // ============================================================================
 
 /**
- * Fetch delivery volume data for a given period
- * @param {string} period - "daily" or "weekly"
- * @param {string} uid - User ID
- * @returns {Promise<Array>} Array of delivery volume data
+ * Fetch delivery volume data aggregated by date for analytics charts.
+ * Fetches parcels with Delivered/Failed status, extracts completion timestamps (DeliveredAt/FailedAt), groups by local date.
+ * Includes backwards compatibility with "Cancelled" status. Used for dashboard delivery volume charts.
+ * @param {string} period - "daily" (groups by YYYY-MM-DD) or "weekly" (groups by week number)
+ * @param {string} uid - User ID to filter parcels by creator
+ * @returns {Promise<Array>} Array of {date, count} objects for charting
  */
 export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
   try {
     const parcelsRef = collection(db, "parcels");
     const q = query(
       parcelsRef,
-      where("status", "in", ["Delivered", "Cancelled"]),
+      where("status", "in", ["Delivered", "Failed", "Cancelled"]),
       where("uid", "==", uid)
     );
 
@@ -484,15 +577,21 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
 
       const ts =
         parcel.DeliveredAt?.toDate?.() ??
-        parcel.CancelledAt?.toDate?.() ??
+        parcel.FailedAt?.toDate?.() ??
         parcel.createdAt?.toDate?.();
 
       if (!ts || isNaN(ts.getTime?.())) return;
       const date = new Date(ts);
 
+      // Use local date instead of UTC to match user's timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const localDateString = `${year}-${month}-${day}`;
+
       const dateKey =
         period === "daily"
-          ? date.toISOString().split("T")[0]
+          ? localDateString
           : `Week ${getWeekNumber(date)}`;
 
       if (!deliveryData[dateKey]) {
@@ -505,7 +604,7 @@ export const fetchDeliveryVolumeData = async (period = "daily", uid) => {
 
       if (parcel.status === "Delivered") {
         deliveryData[dateKey].deliveries++;
-      } else if (parcel.status === "Cancelled") {
+      } else if (parcel.status === "Failed" || parcel.status === "Cancelled") {
         deliveryData[dateKey].cancelled++;
       }
     });
