@@ -800,6 +800,47 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
           .filter(Boolean)
         }
       </GoogleMap>
+
+      {/* Zone Legend */}
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 16,
+          left: 16,
+          backgroundColor: "white",
+          borderRadius: 2,
+          padding: 2,
+          boxShadow: 3,
+          minWidth: 150,
+        }}
+      >
+        <Box sx={{ fontWeight: "bold", marginBottom: 1, fontSize: 14 }}>
+          Zone Types
+        </Box>
+        {Object.entries(ZONE_COLORS).map(([type, color]) => (
+          <Box
+            key={type}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 0.5,
+              fontSize: 13,
+            }}
+          >
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                backgroundColor: color,
+                borderRadius: "50%",
+                marginRight: 1,
+                border: "1px solid rgba(0,0,0,0.2)",
+              }}
+            />
+            {type}
+          </Box>
+        ))}
+      </Box>
     </Box>
   );
 }
