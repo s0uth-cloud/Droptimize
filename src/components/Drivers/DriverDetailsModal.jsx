@@ -192,14 +192,11 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
 
         <Divider sx={{ mb: 2 }} />
 
-        <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-          <Grid container spacing={3}>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 4
-              }}>
-              <Avatar src={photo} alt={displayName} sx={{ width: 72, height: 72, mx: "auto", mb: 1 }} />
+        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ xs: "center", sm: "flex-start" }}>
+            {/* Avatar Section */}
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 100 }}>
+              <Avatar src={photo} alt={displayName} sx={{ width: 80, height: 80, mb: 1.5 }} />
               <Chip
                 label={status}
                 size="small"
@@ -210,38 +207,36 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
                   fontWeight: 500,
                 }}
               />
-            </Grid>
+            </Box>
 
-            <Grid
-              size={{
-                xs: 12,
-                sm: 8
-              }}>
+            {/* Details Section */}
+            <Box sx={{ flex: 1, width: "100%" }}>
+              <Typography variant="h6" fontWeight="bold" mb={2} sx={{ color: "#333" }}>
+                {displayName}
+              </Typography>
+              
               <Stack spacing={1}>
-                <Typography variant="subtitle1" fontWeight="bold">
-                  {displayName}
-                </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>ID:</strong> {d.id || "N/A"}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Email:</strong> {d.email || "N/A"}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Contact:</strong> {d.phoneNumber || "N/A"}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Vehicle:</strong> {d.vehicleType || "N/A"}
                   {d.model ? ` (${d.model})` : ""}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Plate Number:</strong> {d.plateNumber || "N/A"}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Weight Limit:</strong>{" "}
                   {d.vehicleWeightLimit ? `${d.vehicleWeightLimit} kg` : "N/A"}
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
                   <strong>Speed:</strong>{" "}
                   {Number.isFinite(displaySpeed) ? `${displaySpeed} km/h` : "N/A"}
                   {applicableLimit != null ? ` • Limit ${applicableLimit} km/h` : ""}
@@ -250,12 +245,11 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
 
                 {Array.isArray(d.preferredRoutes) && d.preferredRoutes.length > 0 && (
                   <Box mt={1}>
-                    <Typography variant="body2" fontWeight="bold" mb={0.5}>
+                    <Typography variant="body2" fontWeight="bold" mb={1}>
                       Preferred Routes:
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                       {d.preferredRoutes.map((route, idx) => {
-                        // Create a readable string from the object
                         const label = [
                           route.barangayName,
                           route.municipalityName,
@@ -270,19 +264,18 @@ export default function DriverDetailsModal({ driver, open, onClose, onAssignParc
                             label={label}
                             size="small"
                             sx={{
-                              backgroundColor: "#c4cad0",
+                              backgroundColor: "#e0e0e0",
                               fontSize: "0.75rem",
-                              textTransform: "capitalize",
                             }}
                           />
                         );
                       })}
-                    </Stack>
+                    </Box>
                   </Box>
                 )}
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </Paper>
 
         <Stack direction="row" spacing={2} mt={3} justifyContent="flex-end" flexWrap="wrap">
