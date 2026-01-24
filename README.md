@@ -1,4 +1,4 @@
-# Droptimize Web App 🌐
+# Droptimize Web App
 
 Droptimize is a courier management system designed to make it easier for courier company admins, like J&T Express, to track and manage their employees.
 
@@ -50,5 +50,3 @@ This project is built with:
 - **Firebase** - Backend services
 - **Google Maps API** - Map integration
 - **Tailwind CSS** - Utility-first CSS framework
-
-## Learn More
