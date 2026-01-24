@@ -1,20 +1,18 @@
-# Droptimize Mobile App
+# Droptimize Web App 🌐
 
 Droptimize is a courier management system designed to make it easier for courier company admins, like J&T Express, to track and manage their employees.
 
-This repository is dedicated to the development of the **Droptimize mobile application for drivers**. The mobile application helps drivers find the most efficient route to deliver parcels.
+This repository is dedicated to the development of the **Droptimize web application for administrators**. The web application provides a comprehensive dashboard for managing drivers, tracking parcels, monitoring deliveries, and analyzing performance metrics.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/en/download/current) (LTS version recommended)
-- For Android Emulator: [Android Studio](https://developer.android.com/studio) with Android SDK
-- For Physical Device: [Expo Go](https://expo.dev/go) app (supports Expo SDK 54)
 
 ## Setup Instructions
 
 ### Step 1: Install Dependencies
 
-Open Terminal in the root directory (`Droptimize/`) and run:
+Open Terminal in the root directory (`Droptimize-Web/`) and run:
 
 ```bash
 npm install
@@ -23,40 +21,34 @@ npm install
 ### Step 2: Start the Development Server
 
 ```bash
-npx expo start
+npm run dev
 ```
 
-### Step 3: Run the Application
+The application will start and be accessible at `http://localhost:5173` (or another port if 5173 is in use).
 
-Choose one of the following options:
+### Step 3: Build for Production (Optional)
 
-#### Option A: Using Expo Go (Physical Device)
+To create a production build:
 
-1. Install [Expo Go](https://expo.dev/go) on your Android device
-2. Scan the QR code displayed in the terminal with the Expo Go app
-3. The app will load on your device
+```bash
+npm run build
+```
 
-**Note:** If you encounter issues, ensure you're using Expo Go version compatible with Expo SDK 54.
+To preview the production build:
 
-#### Option B: Using Android Emulator
+```bash
+npm run preview
+```
 
-1. Ensure Android Studio is installed with an Android Virtual Device (AVD) configured
-2. Start your Android emulator
-3. Press `a` in the terminal or run:
-   ```bash
-   npm run android
-   ```
+## Technology Stack
+
+This project is built with:
+
+- **React** - UI library
+- **Vite** - Build tool and dev server
+- **Material-UI (MUI)** - Component library
+- **Firebase** - Backend services
+- **Google Maps API** - Map integration
+- **Tailwind CSS** - Utility-first CSS framework
 
 ## Learn More
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
