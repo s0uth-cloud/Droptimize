@@ -6,4 +6,10 @@ This repository is dedicated to the development of the Droptimize mobile applica
 
 ## Instructions
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+If this is the first time you'll run the program use this step-by-step instruction to guide you.
+
+Step 1: Install dependencies
+If you don't have [`Node.js`](https://nodejs.org/en/download/current), I suggest installing it first before continuing.
+
+If you have Node already installed, open the Terminal in the root directory(i.e. [`cd /Droptimize`]) or you can alternatively right-click in the directory and open Terminal from there.
+Now use the command: [`npm install`]
