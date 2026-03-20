@@ -43,6 +43,13 @@ import {
 const UPDATE_INTERVAL_MS = SPEED_THRESHOLDS.UPDATE_INTERVAL_MS;
 const MOVING_THRESHOLD_M = SPEED_THRESHOLDS.MOVING_THRESHOLD_M;
 
+const TRAFFIC_DENSITY_COLORS = [
+  { label: "Light", color: "#34A853" },
+  { label: "Moderate", color: "#F9AB00" },
+  { label: "Heavy", color: "#EA4335" },
+  { label: "Severe", color: "#8B0000" },
+];
+
 /**
  * Main map component that displays real-time driver tracking, zone management, and route visualization.
  * Features include: Google Maps integration with traffic layer, real-time driver location and speed tracking using GPS smoothing algorithms, slowdown zone creation/editing (Church, Crosswalk, School, Slowdown), crosswalk node management, driver parcel route visualization with Google Directions API, and zone legend display.
@@ -854,6 +861,36 @@ export default function MapComponent({ user, selectedDriver, mapRef }) {
             {type}
           </Box>
         ))}
+
+        {showTraffic && (
+          <Box sx={{ borderTop: "1px solid rgba(0,0,0,0.15)", mt: 1, pt: 1 }}>
+            <Box sx={{ fontWeight: "bold", marginBottom: 1, fontSize: 14 }}>
+              Traffic Density
+            </Box>
+            {TRAFFIC_DENSITY_COLORS.map((item) => (
+              <Box
+                key={item.label}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 0.5,
+                  fontSize: 13,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 4,
+                    backgroundColor: item.color,
+                    borderRadius: 1,
+                    marginRight: 1,
+                  }}
+                />
+                {item.label}
+              </Box>
+            ))}
+          </Box>
+        )}
       </Box>
     </Box>
   );

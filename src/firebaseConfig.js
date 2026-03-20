@@ -1,9 +1,12 @@
 // Firebase imports
 import { initializeApp } from "firebase/app";
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  setPersistence,
   sendEmailVerification,
   signInWithEmailAndPassword,
   updateProfile,
@@ -68,8 +71,10 @@ export const registerUser = async (formData) => {
  * Checks if a user profile exists in Firestore and verifies the role is "admin" before allowing access, signing out non-admin users immediately.
  * Returns an object with success status and user data, or an error message if authentication fails or access is denied.
  */
-export const loginUser = async (email, password) => {
+export const loginUser = async (email, password, rememberMe = false) => {
   try {
+    await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     const userRef = doc(db, "users", user.uid);
@@ -85,7 +90,16 @@ export const loginUser = async (email, password) => {
       return { success: false, error: new Error("Access denied. Only admins can log in.") };
     }
 
-    localStorage.setItem("user", JSON.stringify(user));
+    if (rememberMe) {
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("rememberMe", "true");
+      sessionStorage.removeItem("user");
+    } else {
+      sessionStorage.setItem("user", JSON.stringify(user));
+      localStorage.removeItem("user");
+      localStorage.removeItem("rememberMe");
+    }
+
     return { success: true, user };
 
   } catch (error) {
