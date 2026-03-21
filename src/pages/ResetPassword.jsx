@@ -14,7 +14,6 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   confirmPasswordReset,
-  sendPasswordResetEmail,
   verifyPasswordResetCode,
 } from "firebase/auth";
 import { auth } from "/src/firebaseConfig";
@@ -68,12 +67,25 @@ export default function ResetPasswordPage() {
   }, [searchParams]);
 
   const sendPasswordResetEmailWithRedirect = async (targetEmail) => {
-    const resetUrl = `${window.location.origin}/reset-password`;
-    const actionCodeSettings = {
-      url: resetUrl,
-      handleCodeInApp: false,
-    };
-    await sendPasswordResetEmail(auth, targetEmail, actionCodeSettings);
+    const functionUrl = import.meta.env.VITE_PASSWORD_RESET_FUNCTION_URL;
+    if (!functionUrl) {
+      throw new Error("VITE_PASSWORD_RESET_FUNCTION_URL is not configured.");
+    }
+
+    const response = await fetch(functionUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: targetEmail,
+        webResetBaseUrl: `${window.location.origin}/reset-password`,
+        source: "web",
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.error || "Failed to send reset email.");
+    }
   };
 
   const handleEmailSubmit = async (e) => {
@@ -100,7 +112,7 @@ export default function ResetPasswordPage() {
       setEmail("");
     } catch (err) {
       console.error("Error sending reset email:", err);
-      setEmailError("Failed to send password reset email. Please try again.");
+      setEmailError(err.message || "Failed to send password reset email. Please try again.");
     } finally {
       setEmailLoading(false);
     }
