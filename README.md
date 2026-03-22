@@ -1,4 +1,4 @@
-# Droptimize Web Dashboard 🖥️
+# Droptimize Web App
 
 The admin interface for the Droptimize courier management system.
 
@@ -91,5 +91,3 @@ npm run preview    # Preview production build
 
 - **Google Maps API** - Map integration
 - **Tailwind CSS** - Utility-first CSS framework
-
-## Learn More
