@@ -1,52 +1,93 @@
 # Droptimize Web App
 
-Droptimize is a courier management system designed to make it easier for courier company admins, like J&T Express, to track and manage their employees.
+The admin interface for the Droptimize courier management system.
 
-This repository is dedicated to the development of the **Droptimize web application for administrators**. The web application provides a comprehensive dashboard for managing drivers, tracking parcels, monitoring deliveries, and analyzing performance metrics.
+## 🚀 Getting Started
 
-## Prerequisites
+**→ [👉 GO TO INSTALLATION.md](INSTALLATION.md) ←**
 
-- [Node.js](https://nodejs.org/en/download/current) (LTS version recommended)
+This dashboard allows admins to:
 
-## Setup Instructions
+- ✅ Track all drivers in real-time
+- ✅ Manage parcel deliveries
+- ✅ View performance analytics
+- ✅ Monitor safety incidents
+- ✅ Assign deliveries to drivers
 
-### Step 1: Install Dependencies
-
-Open Terminal in the root directory (`Droptimize-Web/`) and run:
+## Quick Start
 
 ```bash
 npm install
-```
-
-### Step 2: Start the Development Server
-
-```bash
 npm run dev
 ```
 
-The application will start and be accessible at `http://localhost:5173` (or another port if 5173 is in use).
+Visit `http://localhost:5173` in your browser.
 
-### Step 3: Build for Production (Optional)
+---
 
-To create a production build:
+## 📖 Complete Setup
 
-```bash
-npm run build
+For full installation instructions covering:
+
+- Development environment setup
+- Building for production
+- Troubleshooting
+- Deployment
+
+**See: [INSTALLATION.md](INSTALLATION.md)**
+
+---
+
+## Tech Stack
+
+- **React 19** - UI framework
+- **Vite** - Lightning-fast build tool
+- **Firebase** - Backend & authentication
+- **Material-UI** - Component library
+- **Google Maps API** - Real-time driver tracking
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+├── pages/         # Page components
+├── services.js    # API calls
+├── App.jsx        # Main app
+└── firebaseConfig.js  # Firebase setup
 ```
 
-To preview the production build:
+---
+
+## Available Scripts
 
 ```bash
-npm run preview
+npm run dev        # Start dev server
+npm run build      # Build for production
+npm run lint       # Check code quality
+npm run preview    # Preview production build
 ```
 
-## Technology Stack
+---
 
-This project is built with:
+## Browser Support
 
-- **React** - UI library
-- **Vite** - Build tool and dev server
-- **Material-UI (MUI)** - Component library
-- **Firebase** - Backend services
+✅ Chrome | ✅ Edge | ✅ Safari | ✅ Firefox
+
+---
+
+## Need Help?
+
+1. Check [INSTALLATION.md](INSTALLATION.md)
+2. See main [README](../README.md) for project overview
+3. Check [Firebase docs](https://firebase.google.com/docs)
+4. Contact your admin
+
+---
+
+**Ready to get started?** Run `npm run dev` 🎉
+
 - **Google Maps API** - Map integration
 - **Tailwind CSS** - Utility-first CSS framework

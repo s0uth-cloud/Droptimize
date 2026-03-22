@@ -10,15 +10,10 @@ import {
   Button,
   Checkbox,
   Link,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { sendPasswordResetEmail, fetchSignInMethodsForEmail } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import { checkAuth, auth , loginUser } from "../firebaseConfig";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
@@ -30,21 +25,24 @@ export default function LogInForm() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Forgot Password modal state
-  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetError, setResetError] = useState("");
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
-
   const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Droptimize - Log In";
-    checkAuth().then(({ authenticated }) => {
-      if (authenticated) {
-        navigate("/dashboard");
+    checkAuth().then(async ({ authenticated }) => {
+      if (!authenticated) {
+        return;
       }
+
+      const shouldRemember = localStorage.getItem("rememberMe") === "true";
+      if (shouldRemember) {
+        navigate("/dashboard");
+        return;
+      }
+
+      await signOut(auth);
+      sessionStorage.removeItem("user");
+      localStorage.removeItem("user");
     });
   }, [navigate]);
 
@@ -78,7 +76,7 @@ export default function LogInForm() {
     setLoading(true);
 
     try {
-      const { success, error } = await loginUser(trimmedEmail, trimmedPassword);
+      const { success, error } = await loginUser(trimmedEmail, trimmedPassword, rememberMe);
 
       if (success) {
         navigate("/dashboard");
@@ -97,56 +95,6 @@ export default function LogInForm() {
       setLoading(false);
     }
   };
-
-  const openForgotPassword = () => {
-    setResetEmail(formData.email.trim().toLowerCase());
-    setResetError("");
-    setResetSuccess(false);
-    setForgotPasswordOpen(true);
-  };
-
-  const closeForgotPassword = () => {
-    setForgotPasswordOpen(false);
-    setResetError("");
-    setResetSuccess(false);
-  };
-
-const handleResetPassword = async () => {
-  if (!resetEmail) {
-    setResetError("Please enter your email.");
-    return;
-  }
-
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailPattern.test(resetEmail.trim())) {
-    setResetError("Invalid email format.");
-    return;
-  }
-
-  setResetError("");
-  setResetLoading(true);
-
-  try {
-    const email = resetEmail.trim();
-
-    const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-    console.log("Forgot password - signInMethods:", signInMethods);
-
-    if (signInMethods.length === 0) {
-      setResetError("No account found with this email.");
-      setResetLoading(false);
-      return;
-    }
-
-    await sendPasswordResetEmail(auth, email);
-    setResetSuccess(true);
-  } catch (err) {
-    setResetError(err.message || "Failed to send reset email.");
-  } finally {
-    setResetLoading(false);
-  }
-};
-
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" height="100vh" sx={{ px: 2 }}>
@@ -263,7 +211,7 @@ const handleResetPassword = async () => {
               component="button"
                 onClick={(e) => {
                   e.preventDefault(); 
-                  openForgotPassword();
+                  navigate("/reset-password");
                 }}
               underline="hover"
               sx={{
@@ -316,106 +264,6 @@ const handleResetPassword = async () => {
             </Link>
           </Typography>
         </Stack>
-
-        {/* Forgot Password Modal */}
-        <Dialog
-          open={forgotPasswordOpen}
-          onClose={closeForgotPassword}
-          PaperProps={{
-            sx: {
-              p: 1,
-              borderRadius: "1rem",
-              width: { xs: 320, md: 380, lg: 400, xl: 400, xxl: 450 },
-              maxWidth: "90%",
-            },
-          }}
-        >
-          <DialogTitle
-            sx={{
-              fontFamily: "LEMON MILK",
-              fontWeight: "bold",
-              color: "#00b2e1",
-              fontSize: responsiveFontSizes.h5,
-              textAlign: "center",
-            }}
-          >
-            Reset Password
-          </DialogTitle>
-
-        <DialogContent sx={{ mt: 1 }}>
-        {resetSuccess ? (
-        <Typography
-        sx={{
-        mt: 1,
-        textAlign: "center",
-        fontSize: responsiveFontSizes.body1,
-        color: "#29bf12",
-        }}
-        >
-        Password reset email sent! Please check your inbox. </Typography>
-        ) : (
-        <TextField
-        autoFocus
-        margin="dense"
-        label="Email Address"
-        type="email"
-        fullWidth
-        variant="outlined"
-        value={resetEmail}
-        onChange={(e) => setResetEmail(e.target.value.trimStart().toLowerCase())}
-        error={!!resetError}
-        helperText={resetError}
-        disabled={resetLoading}
-        size="small"
-        sx={{
-          '& .MuiInputBase-root': {
-            fontSize: responsiveFontSizes.body1,
-          },
-          '& .MuiInputLabel-root': {
-            fontSize: responsiveFontSizes.body1,
-          },
-        }}
-        />
-        )} </DialogContent>
-
-        <DialogActions sx={{ justifyContent: "space-between", mt: 1, mb: 1 }}>
-        <Button
-        onClick={closeForgotPassword}
-        disabled={resetLoading}
-        sx={{
-        fontFamily: "LEMON MILK",
-        fontWeight: 600,
-        textTransform: "none",
-        color: "#00b2e1",
-        fontSize: responsiveFontSizes.button,
-        }}
-        >
-        Cancel </Button>
-
-        {!resetSuccess && (
-          <Button
-            onClick={handleResetPassword}
-            disabled={resetLoading}
-            variant="contained"
-            sx={{
-              background: "#00b2e1",
-              color: "#fff",
-              fontFamily: "LEMON MILK",
-              fontWeight: "bold",
-              borderRadius: "10px",
-              fontSize: responsiveFontSizes.button,
-              padding: { xs: "0.6rem 1.2rem", md: "0.75rem 1.5rem", xxl: "0.9rem 1.8rem" },
-              textTransform: "none",
-              "&:hover": {
-                background: "#0064b5",
-              },
-            }}
-          >
-            {resetLoading ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : "Send Reset Email"}
-          </Button>
-        )}
-          </DialogActions>
-        </Dialog>
       </Paper>
     </Box>
   );
