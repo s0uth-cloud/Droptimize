@@ -20,7 +20,7 @@ export default function LandingPage() {
   const goBack = () => setActiveGroup(null);
   const handleGetStarted = () => navigate("/signup");
   const handleDownloadApp = () => {
-    const apkUrl = "/apks/app-arm64-v8a-release.apk";
+    const apkUrl = "/apks/droptimize-1.0.0-arm64-v8a-release.apk";
     const link = document.createElement('a');
     link.href = apkUrl;
     link.download = 'Droptimize.apk';
