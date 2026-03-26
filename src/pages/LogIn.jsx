@@ -81,15 +81,40 @@ export default function LogInForm() {
       if (success) {
         navigate("/dashboard");
       } else {
-        console.log("Login error code:", error.code); 
-        const code = error.code || "";
+        const code = error?.code || "";
         if (code.includes("auth/user-not-found")) {
           setFieldErrors({ email: "No account found with this email" });
-        } else if (code.includes("auth/wrong-password")) {
-          setFieldErrors({ password: "Incorrect password" });
+        } else if (
+          code.includes("auth/wrong-password") ||
+          code.includes("auth/invalid-credential")
+        ) {
+          setFieldErrors({ password: "Incorrect email or password" });
+        } else if (code.includes("auth/no-user-profile")) {
+          setError(
+            "Your account exists but setup is incomplete. Please register again or contact support.",
+          );
+        } else if (code.includes("auth/email-not-verified")) {
+          setError(
+            "Please verify your email before logging in. Check your inbox for the verification link.",
+          );
+        } else if (
+          code.includes("auth/profile-write-denied") ||
+          code.includes("auth/access-denied") ||
+          code.includes("permission-denied")
+        ) {
+          setError(
+            "Account access is blocked by database permissions. Please contact support.",
+          );
         } else {
-          setError("Login failed. Please try again.");
+          setError(error?.message || "Login failed. Please try again.");
         }
+      }
+    } catch (err) {
+      const code = err?.code || "";
+      if (code.includes("auth/network-request-failed")) {
+        setError("Network error while contacting Firebase. Please try again.");
+      } else {
+        setError(err?.message || "Login failed. Please try again.");
       }
     } finally {
       setLoading(false);

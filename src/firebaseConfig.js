@@ -4,8 +4,10 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   createUserWithEmailAndPassword,
+  deleteUser,
   getAuth,
   onAuthStateChanged,
+  signOut,
   setPersistence,
   sendEmailVerification,
   signInWithEmailAndPassword,
@@ -15,8 +17,6 @@ import {
   doc,
   getDoc,
   getFirestore,
-  serverTimestamp,
-  setDoc,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -34,6 +34,9 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+const PROFILE_FUNCTION_URL =
+  import.meta.env.VITE_PROFILE_FUNCTION_URL ||
+  "https://asia-southeast1-droptimize-4b6fc.cloudfunctions.net/upsertUserProfile";
 
 /**
  * Registers a new admin user by creating a Firebase Auth account and initializing their Firestore profile with basic information.
@@ -41,26 +44,72 @@ export const storage = getStorage(app);
  * Returns an object with success status and the created user object, or an error message if registration fails.
  */
 export const registerUser = async (formData) => {
+  let createdUser = null;
+
   try {
+    const normalizedEmail = formData.email.trim().toLowerCase();
+
     const userCredential = await createUserWithEmailAndPassword(
       auth,
-      formData.email,
+      normalizedEmail,
       formData.password
     );
     const user = userCredential.user;
+    createdUser = user;
     const fullName = `${formData.firstName} ${formData.lastName}`;
-    await sendEmailVerification(userCredential.user);
     await updateProfile(user, { displayName: fullName });
-    await setDoc(doc(db, "users", user.uid), {
-      uid: user.uid,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      createdAt: serverTimestamp(),
+
+    const idToken = await user.getIdToken();
+    const profileRes = await fetch(PROFILE_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        email: normalizedEmail,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: "admin",
+      }),
     });
+
+    if (!profileRes.ok) {
+      const payload = await profileRes.json().catch(() => ({}));
+      const message =
+        payload?.message || "Failed to create user profile. Please try again.";
+      const profileError = new Error(message);
+      profileError.code = payload?.error || "auth/profile-write-denied";
+      throw profileError;
+    }
+
+    await sendEmailVerification(userCredential.user);
 
     return { success: true, user };
   } catch (error) {
+    if (createdUser) {
+      try {
+        await deleteUser(createdUser);
+      } catch (cleanupError) {
+        console.error("Register cleanup error:", cleanupError.message);
+      }
+    }
+
+    if (
+      error?.code === "permission-denied" ||
+      error?.code === "profile-write-failed" ||
+      error?.code === "auth/profile-write-denied"
+    ) {
+      return {
+        success: false,
+        error: {
+          code: "auth/profile-write-denied",
+          message:
+            "Account creation was blocked by database permissions. Please contact support.",
+        },
+      };
+    }
+
     console.error("Error registering user:", error.message);
     return { success: false, error: error };
   }
@@ -81,13 +130,38 @@ export const loginUser = async (email, password, rememberMe = false) => {
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      return { success: false, error: new Error("No user profile found.") };
+      await signOut(auth);
+      return {
+        success: false,
+        error: {
+          code: "auth/no-user-profile",
+          message:
+            "No account profile found. Please register again or contact support.",
+        },
+      };
     }
 
     const role = userDoc.data().role;
     if (role !== "admin") {
-      auth.signOut();
-      return { success: false, error: new Error("Access denied. Only admins can log in.") };
+      await signOut(auth);
+      return {
+        success: false,
+        error: {
+          code: "auth/forbidden-role",
+          message: "Access denied. Only admins can log in.",
+        },
+      };
+    }
+
+    if (!user.emailVerified) {
+      await signOut(auth);
+      return {
+        success: false,
+        error: {
+          code: "auth/email-not-verified",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
+        },
+      };
     }
 
     if (rememberMe) {
@@ -104,6 +178,15 @@ export const loginUser = async (email, password, rememberMe = false) => {
 
   } catch (error) {
     console.error("Login error:", error.message);
+    if (error?.code === "permission-denied") {
+      return {
+        success: false,
+        error: {
+          code: "auth/access-denied",
+          message: "Access denied for this account. Please contact support.",
+        },
+      };
+    }
     return { success: false, error };
   }
 };

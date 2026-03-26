@@ -9,6 +9,7 @@ import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/fires
 import SuccessMessage from "../components/AccountSetup/SuccessMessage.jsx";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 import axios from "axios";
+import { sanitizeNameInput, sanitizePhoneInput } from "../utils";
 
 export default function AccountSetup() {
   useEffect(() => {
@@ -130,7 +131,14 @@ export default function AccountSetup() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let nextValue = value;
+    if (name === "contactNumber") {
+      nextValue = sanitizePhoneInput(value).slice(0, 10);
+    }
+    if (name === "branchName") {
+      nextValue = sanitizeNameInput(value);
+    }
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
   };
 
   const handleSubmit = async () => {

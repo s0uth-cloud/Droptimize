@@ -4,6 +4,13 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import SignUpSuccessMessage from "/src/components/SignUp/SignUpSuccessMessage.jsx";
 import { registerUser } from "../firebaseConfig";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
+import {
+  sanitizeEmailInput,
+  sanitizeNameInput,
+  validateEmail,
+  validateName,
+  validateStrongPassword,
+} from "../utils";
 
 export default function SignUpForm() {
   useEffect(() => {
@@ -27,7 +34,15 @@ export default function SignUpForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value.trimStart() }));
+    let nextValue = value;
+    if (name === "firstName" || name === "lastName") {
+      nextValue = sanitizeNameInput(value);
+    }
+    if (name === "email") {
+      nextValue = sanitizeEmailInput(value);
+    }
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
+    setFieldErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -36,15 +51,20 @@ export default function SignUpForm() {
     const { firstName, lastName, email, password, confirmPassword } = formData;
     const errors = {};
 
-    if (!firstName) errors.firstName = "First name is required";
-    if (!lastName) errors.lastName = "Last name is required";
-    if (!email) errors.email = "Email is required";
-    if (!password) errors.password = "Password is required";
+    const firstNameError = validateName(firstName, "First name");
+    if (firstNameError) errors.firstName = firstNameError;
+
+    const lastNameError = validateName(lastName, "Last name");
+    if (lastNameError) errors.lastName = lastNameError;
+
+    const emailError = validateEmail(email);
+    if (emailError) errors.email = emailError;
+
+    const passwordError = validateStrongPassword(password);
+    if (passwordError) errors.password = passwordError;
+
     if (!confirmPassword) errors.confirmPassword = "Please confirm your password";
     if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
-
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (email && !emailPattern.test(email)) errors.email = "Invalid email format";
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
