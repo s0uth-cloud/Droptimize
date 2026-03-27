@@ -14,6 +14,11 @@ import { auth, db } from "/src/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import ProfilePhotoSelector from "../components/Profile/ProfilePhotoSelector.jsx";
+import {
+  sanitizeNameInput,
+  sanitizePhoneInput,
+  validateName,
+} from "../utils";
 
 export default function Profile() {
   useEffect(() => {
@@ -39,6 +44,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,19 +96,37 @@ export default function Profile() {
     if (["branchName", "branchAddress", "operatingArea"].includes(name)) {
       setBranch((prev) => ({ ...prev, [name]: value }));
     } else {
-      setProfile((prev) => ({ ...prev, [name]: value }));
+      const nextValue =
+        name === "fullName"
+          ? sanitizeNameInput(value)
+          : name === "contactNumber"
+            ? sanitizePhoneInput(value)
+            : value;
+      setProfile((prev) => ({ ...prev, [name]: nextValue }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleSave = async () => {
     if (!userId) return;
+
+    const nextErrors = {};
+    const fullNameError = validateName(profile.fullName, "Full name");
+    if (fullNameError) nextErrors.fullName = fullNameError;
+    if (profile.contactNumber && profile.contactNumber.length < 10) {
+      nextErrors.contactNumber = "Contact number must contain at least 10 digits";
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     setSaving(true);
     try {
       const userRef = doc(db, "users", userId);
       await setDoc(
         userRef,
         {
-          fullName: profile.fullName,
+          fullName: profile.fullName.trim(),
           contactNumber: profile.contactNumber,
           updatedAt: new Date().toISOString(),
         },
@@ -189,6 +213,8 @@ export default function Profile() {
               fullWidth
               size="small"
               disabled={!editing}
+              error={!!errors.fullName}
+              helperText={errors.fullName || ""}
             />
             <TextField
               label="Email"
@@ -206,6 +232,8 @@ export default function Profile() {
               fullWidth
               size="small"
               disabled={!editing}
+              error={!!errors.contactNumber}
+              helperText={errors.contactNumber || ""}
             />
           </Stack>
 

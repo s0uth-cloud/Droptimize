@@ -49,71 +49,92 @@ export default function Dashboard() {
   useEffect(() => {
     document.title = "Dashboard";
 
-      /**
-       * Fetches all dashboard data in parallel including parcel stats, driver stats, delivery volume, overspeeding data, and recent incidents.
-       * Retrieves the current admin's branchId from Firestore and uses it to filter branch-specific data.
-       * Uses Promise.all for efficient parallel data fetching and updates all state variables once data is retrieved.
-       */
-      const fetchDashboardData = async () => {
-        try {
-          setLoading(true);
+    /**
+     * Fetches all dashboard data in parallel including parcel stats, driver stats, delivery volume, overspeeding data, and recent incidents.
+     * Retrieves the current admin's branchId from Firestore and uses it to filter branch-specific data.
+     * Uses Promise.all for efficient parallel data fetching and updates all state variables once data is retrieved.
+     */
+    let unsubscribeAuth = null;
+
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
         
-          auth.onAuthStateChanged(async (user) => {
-            if (user) {
-              const uid = user.uid; 
-              console.log("Current user UID:", uid);
-
-              // Fetch branchId from user document
-              const userDoc = await getDoc(doc(db, "users", uid));
-              const branchId = userDoc.exists() ? userDoc.data().branchId : null;
-              
-              if (!branchId) {
-                console.error("User has no branchId");
-                setLoading(false);
-                return;
-              }
-
-              console.log("Current user branchId:", branchId);
-
-              const [
-                parcels,
-                drivers,
-                dailyDeliveries,
-                weeklyDeliveries,
-                dailySpeed,
-                weeklySpeed,
-                recentIncidents,
-              ] = await Promise.all([
-                fetchParcelStatusData(uid),
-                fetchDriverStatusData(branchId),
-                fetchDeliveryVolumeData("daily", uid),
-                fetchDeliveryVolumeData("weekly", uid),
-                fetchOverspeedingData("daily", branchId),
-                fetchOverspeedingData("weekly", branchId),
-                fetchRecentIncidents(5, branchId),
-              ]);
-
-              console.log("Fetched data:", { parcels, drivers, dailyDeliveries, weeklyDeliveries, dailySpeed, weeklySpeed, recentIncidents });
-
-              setParcelData(parcels);
-              setDriverData(drivers);
-              setDailyDeliveryData(dailyDeliveries);
-              setWeeklyDeliveryData(weeklyDeliveries);
-              setDailySpeedData(dailySpeed);
-              setWeeklySpeedData(weeklySpeed);
-              setIncidents(recentIncidents);
-            } else {
-              console.log("No user logged in.");
-            }
+        unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+          // Clear state when user changes to prevent stale data
+          if (!user) {
+            setParcelData({ delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0 });
+            setDriverData({ available: 0, onTrip: 0, offline: 0 });
+            setDailyDeliveryData([]);
+            setWeeklyDeliveryData([]);
+            setDailySpeedData([]);
+            setWeeklySpeedData([]);
+            setIncidents([]);
             setLoading(false);
-          });
-        } catch (error) {
-          console.error("Error fetching dashboard data:", error);
-          setLoading(false);
-        }
-      };
+            return;
+          }
 
+          if (user) {
+            const uid = user.uid; 
+            console.log("Current user UID:", uid);
+
+            // Fetch branchId from user document
+            const userDoc = await getDoc(doc(db, "users", uid));
+            const branchId = userDoc.exists() ? userDoc.data().branchId : null;
+            
+            if (!branchId) {
+              console.error("User has no branchId");
+              setLoading(false);
+              return;
+            }
+
+            console.log("Current user branchId:", branchId);
+
+            const [
+              parcels,
+              drivers,
+              dailyDeliveries,
+              weeklyDeliveries,
+              dailySpeed,
+              weeklySpeed,
+              recentIncidents,
+            ] = await Promise.all([
+              fetchParcelStatusData(uid),
+              fetchDriverStatusData(branchId),
+              fetchDeliveryVolumeData("daily", uid),
+              fetchDeliveryVolumeData("weekly", uid),
+              fetchOverspeedingData("daily", branchId),
+              fetchOverspeedingData("weekly", branchId),
+              fetchRecentIncidents(5, branchId),
+            ]);
+
+            console.log("Fetched data:", { parcels, drivers, dailyDeliveries, weeklyDeliveries, dailySpeed, weeklySpeed, recentIncidents });
+
+            setParcelData(parcels);
+            setDriverData(drivers);
+            setDailyDeliveryData(dailyDeliveries);
+            setWeeklyDeliveryData(weeklyDeliveries);
+            setDailySpeedData(dailySpeed);
+            setWeeklySpeedData(weeklySpeed);
+            setIncidents(recentIncidents);
+          }
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setLoading(false);
+      }
+    };
+
+    // Call the async function but don't return its promise
     fetchDashboardData();
+
+    // Return cleanup function that unsubscribes from auth state
+    return () => {
+      if (unsubscribeAuth) {
+        unsubscribeAuth();
+      }
+    };
   }, []);
 
   return (

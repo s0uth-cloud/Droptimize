@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function requesterPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function requesterExists() {
+      return signedIn() && exists(requesterPath());
+    }
+
+    function requesterRole() {
+      return requesterExists() ? get(requesterPath()).data.role : null;
+    }
+
+    function requesterBranchId() {
+      return requesterExists() ? get(requesterPath()).data.branchId : null;
+    }
+
+    function isAdmin() {
+      return requesterRole() == "admin";
+    }
+
+    function isDispatcher() {
+      return requesterRole() == "dispatcher";
+    }
+
+    function isDriver() {
+      return requesterRole() == "driver";
+    }
+
+    function sameBranch(branchId) {
+      return requesterBranchId() != null && requesterBranchId() == branchId;
+    }
+
+    match /users/{userId} {
+      // Allow any signed-in user to list/query (checked by read rule on individual documents)
+      // This is needed for duplicate plate number checks during account setup
+      allow list: if signedIn();
+
+      // Direct self-access avoids recursive requester-role evaluation on users docs.
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+
+      allow create: if signedIn() && request.auth.uid == userId;
+
+      allow update: if signedIn() && request.auth.uid == userId;
+
+      allow delete: if signedIn() && request.auth.uid == userId;
+
+      match /violations/{violationId} {
+        allow read: if signedIn() && (
+          request.auth.uid == userId ||
+          isAdmin()
+        );
+
+        allow create: if signedIn() && (
+          request.auth.uid == userId ||
+          requesterRole() in ["admin", "dispatcher"]
+        );
+
+        allow update, delete: if signedIn() && isAdmin();
+      }
+    }
+
+    match /users/{userId}/preferredRoutes/{routeId} {
+      allow read, create, update, delete: if signedIn() && (
+        request.auth.uid == userId ||
+        isAdmin()
+      );
+    }
+
+    match /branches/{branchId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn() &&
+        request.resource.data.adminId == request.auth.uid;
+
+      allow update, delete: if signedIn() &&
+        resource.data.adminId == request.auth.uid;
+
+      match /slowdowns/{slowdownId} {
+        allow read, write: if signedIn() && (
+          get(/databases/$(database)/documents/branches/$(branchId)).data.adminId == request.auth.uid ||
+          sameBranch(branchId)
+        );
+      }
+    }
+
+    match /parcels/{parcelId} {
+      allow read: if signedIn() && (
+        resource.data.driverUid == request.auth.uid ||
+        (isAdmin() && (requesterBranchId() == null || sameBranch(resource.data.branchId))) ||
+        (isDispatcher() && sameBranch(resource.data.branchId)) ||
+        (isDriver() && sameBranch(resource.data.branchId))
+      );
+
+      allow list: if signedIn() && (
+        requesterRole() in ["admin", "dispatcher", "driver"]
+      );
+
+      allow create: if signedIn() && (
+        requesterRole() in ["admin", "dispatcher"] ||
+        (
+          isDriver() &&
+          requesterBranchId() != null &&
+          request.resource.data.branchId == requesterBranchId()
+        )
+      );
+
+      allow update: if signedIn() && (
+        (
+          resource.data.driverUid == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'DeliveredAt', 'FailedAt', 'DeliveryNotes', 'updatedAt', 'driverUid', 'driverName', 'assignedAt'])
+        ) ||
+        (
+          isDriver() &&
+          (!('driverUid' in resource.data) || resource.data.driverUid == null) &&
+          request.resource.data.driverUid == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'driverUid', 'driverName', 'assignedAt'])
+        ) ||
+        isAdmin() ||
+        (isDispatcher() && sameBranch(resource.data.branchId))
+      );
+
+      allow delete: if signedIn() && isAdmin();
+    }
+
+    match /assignments/{assignmentId} {
+      allow create: if signedIn() && (
+        requesterRole() in ["admin", "dispatcher"]
+      );
+
+      allow read: if signedIn() && (
+        resource.data.driverId == request.auth.uid ||
+        isAdmin() ||
+        isDispatcher()
+      );
+
+      allow update: if signedIn() && (
+        resource.data.driverId == request.auth.uid ||
+        requesterRole() in ["admin", "dispatcher"]
+      );
+
+      allow delete: if signedIn() && isAdmin();
+    }
+
+    match /drivers/{driverId} {
+      allow read: if signedIn();
+
+      allow write: if signedIn() && isAdmin();
+
+      match /violations/{violationId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && requesterRole() in ["admin", "dispatcher"];
+        allow update, delete: if signedIn() && isAdmin();
+      }
+    }
+
+    match /etas/{driverId} {
+      allow read, write: if signedIn() && (
+        request.auth.uid == driverId ||
+        isAdmin()
+      );
+    }
+
+    match /warnings/{warningId} {
+      allow read, create: if signedIn() && (
+        isAdmin() ||
+        requesterBranchId() != null
+      );
+
+      allow update, delete: if false;
+    }
+  }
+}
