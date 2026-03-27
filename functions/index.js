@@ -8,8 +8,10 @@ admin.initializeApp();
 const ALLOWED_ORIGINS = new Set([
 	"https://droptimize-4b6fc.web.app",
 	"https://droptimize-4b6fc.firebaseapp.com",
-	"http://localhost:5173",
-	"http://localhost:3000",
+	...(process.env.ENVIRONMENT === "development" ? [
+		"http://localhost:5173",
+		"http://localhost:3000",
+	] : []),
 ]);
 
 const NAME_RE = /^[A-Za-z][A-Za-z\s'-]{0,48}$/;

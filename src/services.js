@@ -153,46 +153,73 @@ export const fetchAllParcels = async (uid = null) => {
     const parcels = [];
     const parcelsRef = collection(db, "parcels");
     
-    // Get user data to determine role and branchId
-    let userRole = null;
-    let userBranchId = null;
-    
-    if (uid) {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        userRole = userData.role;
-        userBranchId = userData.branchId;
-      }
+    // Require uid for access control
+    if (!uid) {
+      console.error("fetchAllParcels: uid is required for access control");
+      return parcels;
     }
     
-    // Query based on role
+    // Get user data to determine role and branchId
+    let userDoc;
+    try {
+      userDoc = await getDoc(doc(db, "users", uid));
+    } catch (userFetchError) {
+      console.error("fetchAllParcels: Error fetching user document:", userFetchError.code, userFetchError.message);
+      return parcels;
+    }
+    
+    if (!userDoc.exists()) {
+      console.error("fetchAllParcels: user document not found for uid:", uid);
+      return parcels;
+    }
+    
+    const userData = userDoc.data();
+    const userRole = userData?.role;
+    const userBranchId = userData?.branchId;
+    
+    if (!userRole) {
+      console.error("fetchAllParcels: user has no role defined");
+      return parcels;
+    }
+    
+    console.log(`fetchAllParcels: Loading parcels for ${userRole}. branchId: ${userBranchId || "none (super-admin)"}`);
+    
+    // Query based on role - never fetch all parcels without restriction
     let parcelsSnapshot;
     
     if (userRole === "admin") {
-      // Admin can see all parcels
-      parcelsSnapshot = await getDocs(parcelsRef);
-    } else if (userRole === "dispatcher" && userBranchId) {
-      // Dispatcher sees parcels from their branch
+      // Admin with branchId sees only their branch's parcels (data isolation)
+      // Admin without branchId sees all parcels (super-admin)
+      if (userBranchId) {
+        console.log(`fetchAllParcels: Admin with branchId=${userBranchId}, filtering by branch`);
+        const q = query(parcelsRef, where("branchId", "==", userBranchId));
+        parcelsSnapshot = await getDocs(q);
+      } else {
+        // Super-admin with no branch restriction can see all parcels
+        console.log(`fetchAllParcels: Super-admin, fetching all parcels`);
+        parcelsSnapshot = await getDocs(parcelsRef);
+      }
+    } else if (userRole === "dispatcher" || userRole === "driver") {
+      // Dispatcher/Driver sees parcels from their branch only
+      if (!userBranchId) {
+        console.warn(`fetchAllParcels: ${userRole} has no branchId`);
+        return parcels;
+      }
+      console.log(`fetchAllParcels: ${userRole} with branchId=${userBranchId}, filtering by branch`);
       const q = query(parcelsRef, where("branchId", "==", userBranchId));
       parcelsSnapshot = await getDocs(q);
-    } else if (userRole === "driver" && uid) {
-      // Driver sees only their assigned parcels
-      const q = query(parcelsRef, where("driverUid", "==", uid));
-      parcelsSnapshot = await getDocs(q);
     } else {
-      // Fallback: fetch all and filter by uid if provided
-      parcelsSnapshot = await getDocs(parcelsRef);
+      console.error(`fetchAllParcels: unknown role: ${userRole}`);
+      return parcels;
     }
+
+    console.log(`fetchAllParcels: Found ${parcelsSnapshot.docs.length} parcels`);
 
     if (parcelsSnapshot.empty) return parcels;
 
     for (const parcelDoc of parcelsSnapshot.docs) {
       const parcelId = parcelDoc.id;
       const parcelData = parcelDoc.data();
-
-      // If no role determined and uid provided, filter by creator uid
-      if (!userRole && uid && parcelData.uid !== uid) continue;
 
       parcels.push({
         id: parcelId,
@@ -214,15 +241,15 @@ export const fetchAllParcels = async (uid = null) => {
 
     return parcels;
   } catch (error) {
-    console.error("Error fetching parcels:", error);
+    console.error("Error fetching parcels:", error.code || error.message || error);
     return [];
   }
 };
 
 /**
- * Fetch parcel status statistics with optional branch or user filtering.
+ * Fetch parcel status statistics with role-based access control.
  * Categorizes parcels by status: delivered, out for delivery, failed/returned, pending.
- * Iterates through all parcels or branch-specific parcels and returns counts for dashboard charts.
+ * Applies same role-based filtering as fetchAllParcels to ensure data isolation.
  * @param {string|null} uid - User ID to filter parcels (determines role-based filtering)
  * @returns {Promise<Object>} Object with status counts: {delivered, outForDelivery, failedOrReturned, pending, total}
  */
@@ -233,8 +260,49 @@ export const fetchParcelStatusData = async (uid = null) => {
     let failedOrReturned = 0;
     let pending = 0;
 
+    // Require uid for access control
+    if (!uid) {
+      console.error("fetchParcelStatusData: uid is required for access control");
+      return { delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0, total: 0 };
+    }
+
+    // Get user data to determine role and branchId
+    const userDoc = await getDoc(doc(db, "users", uid));
+    if (!userDoc.exists()) {
+      console.error("fetchParcelStatusData: user document not found");
+      return { delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0, total: 0 };
+    }
+
+    const userData = userDoc.data();
+    const userRole = userData.role;
+    const userBranchId = userData.branchId;
+
     const parcelsRef = collection(db, "parcels");
-    const parcelsSnapshot = await getDocs(parcelsRef);
+    let parcelsSnapshot;
+
+    // Query based on role - same filtering as fetchAllParcels
+    if (userRole === "admin") {
+      // Admin with branchId sees only their branch's parcels (data isolation)
+      // Admin without branchId sees all parcels (super-admin)
+      if (userBranchId) {
+        const q = query(parcelsRef, where("branchId", "==", userBranchId));
+        parcelsSnapshot = await getDocs(q);
+      } else {
+        // Super-admin with no branch restriction can see all parcels
+        parcelsSnapshot = await getDocs(parcelsRef);
+      }
+    } else if (userRole === "dispatcher" || userRole === "driver") {
+      // Dispatcher/Driver sees only their branch parcels
+      if (!userBranchId) {
+        console.warn(`fetchParcelStatusData: ${userRole} has no branchId`);
+        return { delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0, total: 0 };
+      }
+      const q = query(parcelsRef, where("branchId", "==", userBranchId));
+      parcelsSnapshot = await getDocs(q);
+    } else {
+      console.error(`fetchParcelStatusData: unknown role: ${userRole}`);
+      return { delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0, total: 0 };
+    }
 
     if (parcelsSnapshot.empty) {
       return { delivered: 0, outForDelivery: 0, failedOrReturned: 0, pending: 0, total: 0 };
@@ -242,7 +310,6 @@ export const fetchParcelStatusData = async (uid = null) => {
 
     for (const parcelDoc of parcelsSnapshot.docs) {
       const parcelData = parcelDoc.data();
-      if (uid && parcelData.uid !== uid) continue;
 
       switch (parcelData.status?.toLowerCase()) {
         case "delivered":

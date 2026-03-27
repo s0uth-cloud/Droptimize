@@ -39,10 +39,12 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // Allow any signed-in user to list/query (checked by read rule on individual documents)
+      // This is needed for duplicate plate number checks during account setup
       allow list: if signedIn();
 
       // Direct self-access avoids recursive requester-role evaluation on users docs.
-      allow read: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
 
       allow create: if signedIn() && request.auth.uid == userId;
 
@@ -92,7 +94,7 @@ service cloud.firestore {
     match /parcels/{parcelId} {
       allow read: if signedIn() && (
         resource.data.driverUid == request.auth.uid ||
-        isAdmin() ||
+        (isAdmin() && (requesterBranchId() == null || sameBranch(resource.data.branchId))) ||
         (isDispatcher() && sameBranch(resource.data.branchId)) ||
         (isDriver() && sameBranch(resource.data.branchId))
       );

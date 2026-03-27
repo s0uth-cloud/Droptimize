@@ -7,12 +7,15 @@ import {
   Paper,
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { deleteDoc, doc } from "firebase/firestore";
 import ParcelsHeader from "../components/Parcels/ParcelsHeader.jsx";
 import ParcelList from "../components/Parcels/ParcelList.jsx";
 import ParcelEntryModal from "../components/Modals/ParcelEntryModal.jsx";
 import CSVImportModal from "../components/Modals/CSVImportModal.jsx";
 import { fetchAllParcels } from "../services.js";
 import { auth } from "../firebaseConfig.js";
+import { db } from "../firebaseConfig.js";
 
 export default function Parcels() {
   const [counts, setCounts] = useState({
@@ -29,13 +32,24 @@ export default function Parcels() {
   const [openManualModal, setOpenManualModal] = useState(false);
   const [parcels, setParcels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedParcels, setSelectedParcels] = useState([]);
 
   const fetchParcels = async () => {
     setLoading(true);
+    setError(null);
     try {
       const currentUser = auth.currentUser;
-      const uid = currentUser ? currentUser.uid : null;
+      if (!currentUser) {
+        const errorMsg = "No authenticated user. Please log in.";
+        console.error("❌", errorMsg);
+        setError(errorMsg);
+        setLoading(false);
+        return;
+      }
+
+      console.log("Fetching parcels for user:", currentUser.uid);
+      const uid = currentUser.uid;
       const parcelData = await fetchAllParcels(uid);
 
       const enriched = parcelData.map((p) => ({
@@ -65,8 +79,11 @@ export default function Parcels() {
       });
 
       setCounts(newCounts);
-    } catch (error) {
-      console.error("❌ Error fetching parcels:", error);
+      console.log("✓ Parcels loaded successfully:", enriched.length);
+    } catch (err) {
+      const errorMsg = err?.message || "Failed to load parcels";
+      console.error("❌ Error fetching parcels:", err);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -74,7 +91,19 @@ export default function Parcels() {
 
   useEffect(() => {
     document.title = "Manage Parcels";
-    fetchParcels();
+    
+    // Wait for auth state to initialize before fetching parcels
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("Auth state initialized, fetching parcels for user:", user.uid);
+        fetchParcels();
+      } else {
+        console.warn("No authenticated user found for Parcels page");
+        setLoading(false);
+      }
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const filteredBySearch = searchQuery
@@ -140,9 +169,6 @@ export default function Parcels() {
 
   const handleBulkDelete = async () => {
     try {
-      const { deleteDoc, doc } = await import("firebase/firestore");
-      const { db } = await import("../firebaseConfig.js");
-      
       await Promise.all(
         selectedParcels.map((id) => deleteDoc(doc(db, "parcels", id)))
       );
@@ -293,7 +319,23 @@ export default function Parcels() {
         />
 
         {/* Parcel list */}
-        {loading ? (
+        {error ? (
+          <Box textAlign="center" my={4} sx={{ color: "error.main" }}>
+            <Typography variant="h6" color="error">
+              ⚠️ Error Loading Parcels
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, mb: 3 }}>
+              {error}
+            </Typography>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => fetchParcels()}
+            >
+              Retry
+            </Button>
+          </Box>
+        ) : loading ? (
           <Box textAlign="center" my={4}>
             <CircularProgress />
             <Typography variant="body1" sx={{ mt: 2 }}>

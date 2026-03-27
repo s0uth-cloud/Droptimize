@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Stack, Typography, TextField, Select, MenuItem, Box, Divider, InputAdornment, Paper, Button, FormControl, InputLabel, FormHelperText } from "@mui/material";
+import { Stack, Typography, TextField, Select, MenuItem, Box, Divider, InputAdornment, Paper, Button, FormControl, InputLabel, FormHelperText, CircularProgress } from "@mui/material";
 import { TimePicker } from "@mui/x-date-pickers";
 import PersonIcon from "@mui/icons-material/Person";
 import BusinessIcon from "@mui/icons-material/Business";
 import { useNavigate } from "react-router-dom";
+import { signOut } from "firebase/auth";
 import { auth, db } from "/src/firebaseConfig";
 import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import SuccessMessage from "../components/AccountSetup/SuccessMessage.jsx";
@@ -37,6 +38,7 @@ export default function AccountSetup() {
   const [errors, setErrors] = useState({});
   const [isValid, setIsValid] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
 
   // PSGC API data
   const [regions, setRegions] = useState([]);
@@ -48,20 +50,34 @@ export default function AccountSetup() {
     const fetchUser = async () => {
       try {
         const user = auth.currentUser;
-        if (user) {
-          setUserId(user.uid);
-          setFormData((prev) => ({
-            ...prev,
-            fullName: user.displayName || "",
-            email: user.email || "",
-          }));
+        if (!user) {
+          navigate("/login", { replace: true });
+          return;
         }
+
+        await user.reload();
+
+        if (!user.emailVerified) {
+          await signOut(auth);
+          navigate("/login", { replace: true });
+          return;
+        }
+
+        setUserId(user.uid);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: user.displayName || "",
+          email: user.email || "",
+        }));
       } catch (err) {
         console.error("Failed to get Firebase user:", err);
+        navigate("/login", { replace: true });
+      } finally {
+        setIsCheckingAccess(false);
       }
     };
     fetchUser();
-  }, []);
+  }, [navigate]);
 
   // Fetch regions on mount
   useEffect(() => {
@@ -192,6 +208,11 @@ export default function AccountSetup() {
   return (
     <>
       {submitted && <SuccessMessage open />}
+      {isCheckingAccess ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+          <CircularProgress />
+        </Box>
+      ) : (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" sx={{ px: 2, py: 4 }}>
         <Paper sx={{ 
           p: { xs: 4, md: 5, lg: 5, xl: 6, xxl: 7 }, 
@@ -458,6 +479,7 @@ export default function AccountSetup() {
           </Stack>
         </Paper>
       </Box>
+      )}
     </>
   );
 }

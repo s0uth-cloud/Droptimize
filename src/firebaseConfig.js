@@ -177,17 +177,25 @@ export const loginUser = async (email, password, rememberMe = false) => {
     return { success: true, user };
 
   } catch (error) {
-    console.error("Login error:", error.message);
-    if (error?.code === "permission-denied") {
-      return {
-        success: false,
-        error: {
-          code: "auth/access-denied",
-          message: "Access denied for this account. Please contact support.",
-        },
-      };
-    }
-    return { success: false, error };
+    console.error("Login error:", error.code);
+    
+    // Map Firebase error codes to safe user-facing messages
+    const SAFE_ERROR_MESSAGES = {
+      "auth/user-not-found": "Invalid email or password",
+      "auth/wrong-password": "Invalid email or password",
+      "auth/invalid-email": "Please enter a valid email address",
+      "auth/too-many-requests": "Too many failed login attempts. Please try again later.",
+      "permission-denied": "Access denied for this account. Please contact support.",
+    };
+    
+    const safeMessage = SAFE_ERROR_MESSAGES[error?.code] || "An error occurred. Please try again.";
+    return {
+      success: false,
+      error: {
+        code: error?.code || "auth/unknown-error",
+        message: safeMessage,
+      },
+    };
   }
 };
 

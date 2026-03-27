@@ -141,6 +141,7 @@ export default function SignUpForm() {
             name="firstName"
             value={formData.firstName}
             onChange={handleChange}
+            autoComplete="given-name"
             error={!!fieldErrors.firstName}
             helperText={fieldErrors.firstName}
             fullWidth
@@ -159,6 +160,7 @@ export default function SignUpForm() {
             name="lastName"
             value={formData.lastName}
             onChange={handleChange}
+            autoComplete="family-name"
             error={!!fieldErrors.lastName}
             helperText={fieldErrors.lastName}
             fullWidth
@@ -178,6 +180,7 @@ export default function SignUpForm() {
             type="email"
             value={formData.email}
             onChange={handleChange}
+            autoComplete="email"
             error={!!fieldErrors.email}
             helperText={fieldErrors.email}
             fullWidth
@@ -197,6 +200,7 @@ export default function SignUpForm() {
             type={showPassword ? "text" : "password"}
             value={formData.password}
             onChange={handleChange}
+            autoComplete="new-password"
             error={!!fieldErrors.password}
             helperText={fieldErrors.password}
             fullWidth
@@ -227,6 +231,7 @@ export default function SignUpForm() {
             type={showConfirm ? "text" : "password"}
             value={formData.confirmPassword}
             onChange={handleChange}
+            autoComplete="new-password"
             error={!!fieldErrors.confirmPassword}
             helperText={fieldErrors.confirmPassword}
             fullWidth
