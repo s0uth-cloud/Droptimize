@@ -38,7 +38,7 @@ export default function SignUpSuccessMessage() {
   useEffect(() => {
     if (emailVerified) {
       const timer = setTimeout(() => {
-        navigate("/account-setup");
+        navigate("/account-setup", { replace: true });
       }, 1500);
       return () => clearTimeout(timer);
     }

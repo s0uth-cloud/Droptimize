@@ -11,6 +11,7 @@ import SuccessMessage from "../components/AccountSetup/SuccessMessage.jsx";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 import axios from "axios";
 import { sanitizeNameInput, sanitizePhoneInput } from "../utils";
+import { generateBranchCode } from "../utils/branchCodeGenerator";
 
 export default function AccountSetup() {
   useEffect(() => {
@@ -172,7 +173,12 @@ export default function AccountSetup() {
         regionObj?.name
       ].filter(Boolean).join(", ");
 
-      const branchRef = await addDoc(collection(db, "branches"), {
+      // Generate a unique branch code to use as the document ID
+      const branchCode = generateBranchCode();
+
+      // Create branch with the code as the document ID so it can be used as joinCode
+      await setDoc(doc(db, "branches", branchCode), {
+        branchCode: branchCode,
         adminId: userId,
         branchName: formData.branchName,
         branchAddress: formData.branchAddress,
@@ -187,17 +193,19 @@ export default function AccountSetup() {
         closingTime: formData.closingTime?.format("HH:mm") || "",
         createdAt: serverTimestamp(),
       });
-      console.log("Branch")
+      console.log("Branch created with code:", branchCode)
+      
+      // Update user with the branch code as branchId
       await setDoc(doc(db, "users", userId), {
         fullName: formData.fullName,
         email: formData.email,
         contactNumber: formData.contactNumber,
         role: "admin",
-        branchId: branchRef.id,
+        branchId: branchCode,
         createdAt: serverTimestamp(),
       }, { merge: true });
 
-      console.log("user")
+      console.log("user updated with branchId:", branchCode)
       setSubmitted(true);
       setTimeout(() => navigate("/dashboard"), 3000);
     } catch (error) {

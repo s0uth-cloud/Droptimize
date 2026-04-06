@@ -215,3 +215,261 @@ exports.requestPasswordReset = functions
 			});
 		}
 	});
+
+// Helper function to generate a unique branch code
+function generateBranchCode() {
+	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	let code = 'BR';
+	for (let i = 0; i < 4; i++) {
+		code += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return code.slice(0, 4) + '-' + code.slice(4);
+}
+
+// Helper function to check if a string looks like an old Firestore auto-generated ID
+function isOldFirestoreId(id) {
+	if (id.length !== 20) return false;
+	const hasNumbers = /\d/.test(id);
+	const hasLowerCase = /[a-z]/.test(id);
+	const hasUpperCase = /[A-Z]/.test(id);
+	return (hasNumbers && (hasLowerCase || hasUpperCase)) || (hasLowerCase && hasUpperCase);
+}
+
+/**
+ * Cloud Function to migrate existing branches without proper branch codes
+ * This function:
+ * 1. Finds branches without branchCode field
+ * 2. Generates human-readable codes for them
+ * 3. Updates user references to use the new codes
+ * 
+ * Call via: POST /migrateBranchCodes with Authorization header
+ */
+exports.migrateBranchCodes = functions
+	.region("asia-southeast1")
+	.https.onRequest(async (req, res) => {
+		applyCors(req, res);
+
+		if (req.method === "OPTIONS") {
+			return res.status(204).send("");
+		}
+
+		if (req.method !== "POST") {
+			return res.status(405).json({
+				error: "method-not-allowed",
+				message: "Only POST is allowed.",
+			});
+		}
+
+		// Verify authorization
+		const authHeader = req.get("authorization") || "";
+		if (!authHeader.startsWith("Bearer ")) {
+			return res.status(401).json({
+				error: "unauthenticated",
+				message: "Missing Authorization bearer token.",
+			});
+		}
+
+		try {
+			const idToken = authHeader.replace("Bearer ", "").trim();
+			const decodedToken = await admin.auth().verifyIdToken(idToken);
+			
+			// Verify that the user is an admin (you can add custom claims check here)
+			const userRef = admin.firestore().collection("users").doc(decodedToken.uid);
+			const userSnap = await userRef.get();
+			const userData = userSnap.data();
+
+			if (userData?.role !== "admin") {
+				return res.status(403).json({
+					error: "permission-denied",
+					message: "Only admins can run migrations.",
+				});
+			}
+		} catch (_err) {
+			return res.status(401).json({
+				error: "invalid-token",
+				message: "Invalid authentication token.",
+			});
+		}
+
+		try {
+			const branchesRef = admin.firestore().collection("branches");
+			const branchesSnapshot = await branchesRef.get();
+
+			const batch = admin.firestore().batch();
+			let processedCount = 0;
+			const migratedBranches = [];
+
+			for (const branchDoc of branchesSnapshot.docs) {
+				const branchData = branchDoc.data();
+				const branchId = branchDoc.id;
+
+				// Check if branch already has a proper code
+				if (branchData.branchCode && branchData.branchCode === branchId) {
+					continue;
+				}
+
+				// For old branches with auto-generated IDs, generate a new code
+				if (!branchData.branchCode || branchData.branchCode !== branchId) {
+					if (isOldFirestoreId(branchId)) {
+						const newBranchCode = generateBranchCode();
+
+						// Create new branch document with the new code
+						batch.set(branchesRef.doc(newBranchCode), {
+							...branchData,
+							branchCode: newBranchCode,
+							migratedAt: admin.firestore.FieldValue.serverTimestamp(),
+						});
+
+						// Update all users that reference the old branch ID
+						const usersRef = admin.firestore().collection("users");
+						const usersSnapshot = await usersRef.where("branchId", "==", branchId).get();
+
+						for (const userDoc of usersSnapshot.docs) {
+							batch.update(userDoc.ref, {
+								branchId: newBranchCode,
+								updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+							});
+						}
+
+						migratedBranches.push({
+							oldId: branchId,
+							newCode: newBranchCode,
+							branchName: branchData.branchName,
+						});
+
+						processedCount++;
+					} else {
+						// Add branchCode field if missing
+						batch.update(branchesRef.doc(branchId), {
+							branchCode: branchId,
+							updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+						});
+						processedCount++;
+					}
+				}
+			}
+
+			if (processedCount > 0) {
+				await batch.commit();
+			}
+
+			return res.status(200).json({
+				success: true,
+				message: `Successfully migrated ${processedCount} branches`,
+				branchesProcessed: processedCount,
+				migratedBranches: migratedBranches,
+			});
+		} catch (err) {
+			functions.logger.error("migrateBranchCodes failed", err);
+			return res.status(500).json({
+				error: "migration-failed",
+				message: "Failed to migrate branch codes: " + err.message,
+			});
+		}
+	});
+
+/**
+ * Cloud Function to ensure all admin accounts have proper branch IDs
+ * Call via: POST /fixAdminBranchIds with Authorization header
+ */
+exports.fixAdminBranchIds = functions
+	.region("asia-southeast1")
+	.https.onRequest(async (req, res) => {
+		applyCors(req, res);
+
+		if (req.method === "OPTIONS") {
+			return res.status(204).send("");
+		}
+
+		if (req.method !== "POST") {
+			return res.status(405).json({
+				error: "method-not-allowed",
+				message: "Only POST is allowed.",
+			});
+		}
+
+		// Verify authorization
+		const authHeader = req.get("authorization") || "";
+		if (!authHeader.startsWith("Bearer ")) {
+			return res.status(401).json({
+				error: "unauthenticated",
+				message: "Missing Authorization bearer token.",
+			});
+		}
+
+		try {
+			const idToken = authHeader.replace("Bearer ", "").trim();
+			const decodedToken = await admin.auth().verifyIdToken(idToken);
+			
+			// Verify that the user is an admin
+			const userRef = admin.firestore().collection("users").doc(decodedToken.uid);
+			const userSnap = await userRef.get();
+			const userData = userSnap.data();
+
+			if (userData?.role !== "admin") {
+				return res.status(403).json({
+					error: "permission-denied",
+					message: "Only admins can run this operation.",
+				});
+			}
+		} catch (_err) {
+			return res.status(401).json({
+				error: "invalid-token",
+				message: "Invalid authentication token.",
+			});
+		}
+
+		try {
+			const usersRef = admin.firestore().collection("users");
+			const adminsSnapshot = await usersRef.where("role", "==", "admin").get();
+
+			const batch = admin.firestore().batch();
+			let fixedCount = 0;
+			const adminsMissingBranches = [];
+
+			for (const adminDoc of adminsSnapshot.docs) {
+				const adminData = adminDoc.data();
+
+				// If admin doesn't have a branchId, they need to be assigned one
+				if (!adminData.branchId) {
+					// Try to find a branch they created
+					const adminBranchesSnapshot = await admin
+						.firestore()
+						.collection("branches")
+						.where("adminId", "==", adminDoc.id)
+						.get();
+
+					if (adminBranchesSnapshot.docs.length > 0) {
+						const branchId = adminBranchesSnapshot.docs[0].id;
+						batch.update(adminDoc.ref, {
+							branchId: branchId,
+							updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+						});
+						fixedCount++;
+						adminsMissingBranches.push({
+							adminId: adminDoc.id,
+							adminName: adminData.fullName,
+							assignedBranch: branchId,
+						});
+					}
+				}
+			}
+
+			if (fixedCount > 0) {
+				await batch.commit();
+			}
+
+			return res.status(200).json({
+				success: true,
+				message: `Fixed ${fixedCount} admin accounts with missing branchId`,
+				adminsFixed: fixedCount,
+				details: adminsMissingBranches,
+			});
+		} catch (err) {
+			functions.logger.error("fixAdminBranchIds failed", err);
+			return res.status(500).json({
+				error: "fix-failed",
+				message: "Failed to fix admin branchIds: " + err.message,
+			});
+		}
+	});

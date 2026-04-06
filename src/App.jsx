@@ -15,6 +15,7 @@ import MapView from "./pages/MapView.jsx";
 import Profile from "./pages/Profile.jsx";
 import AccountSetup from "./pages/AccountSeutp.jsx";
 import ResetPasswordForm from "./pages/ResetPassword.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 // Create responsive MUI theme
 const theme = createTheme({
@@ -46,8 +47,15 @@ export default function App() {
             <Route path="/account-setup" element={<AccountSetup />} />
             <Route path="/reset-password" element={<ResetPasswordForm/>} />
 
-            {/* Dashboard layout with nested routes */}
-            <Route path="/dashboard" element={<DashboardLayout />}>
+            {/* Dashboard layout with nested routes - protected */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Dashboard />} />
               <Route path="drivers" element={<Drivers />} />
               <Route path="parcels" element={<Parcels />} />

@@ -14,7 +14,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { checkAuth, auth , loginUser } from "../firebaseConfig";
+import { auth, loginUser } from "../firebaseConfig";
 import { responsiveFontSizes, responsiveDimensions } from "../theme/responsiveTheme.js";
 
 export default function LogInForm() {
@@ -29,22 +29,10 @@ export default function LogInForm() {
 
   useEffect(() => {
     document.title = "Droptimize - Log In";
-    checkAuth().then(async ({ authenticated }) => {
-      if (!authenticated) {
-        return;
-      }
-
-      const shouldRemember = localStorage.getItem("rememberMe") === "true";
-      if (shouldRemember) {
-        navigate("/dashboard");
-        return;
-      }
-
-      await signOut(auth);
-      sessionStorage.removeItem("user");
-      localStorage.removeItem("user");
-    });
-  }, [navigate]);
+    // Don't auto-redirect here. Let the router and ProtectedRoute handle redirects.
+    // If user is already authenticated and account-setup is complete, they'll be sent to dashboard by ProtectedRoute.
+    // If account-setup is incomplete, ProtectedRoute will send them to /account-setup.
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
